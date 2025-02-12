@@ -1,4 +1,5 @@
 import React from "react";
+import { CatmullRomCurve3, Vector3, TubeGeometry } from "three";
 
 const TreeNode = ({ position }) => {
     return (
@@ -11,17 +12,17 @@ const TreeNode = ({ position }) => {
     );
 };
 
-const Branch = ({ start, end }) => {
-  const direction = [(end[0] - start[0]) / 2, (end[1] - start[1]) / 2, 0];
-  const midY = (start[1] + end[1]) / 2;
-  const height = Math.sqrt(
-    Math.pow(end[0] - start[0], 2) + Math.pow(end[1] - start[1], 2)
-  );
-  const angle = Math.atan2(end[1] - start[1], end[0] - start[0]);
+const CurvedBranch = ({ start, end }) => {
+  const curve = new CatmullRomCurve3([
+    new Vector3(start[0], start[1], start[2]),
+    new Vector3((start[0] + end[0]) / 2 + (Math.random() - 0.5) * 0.5, start[1] + 1 + (Math.random() - 0.5) * 0.5, (start[2] + end[2]) / 2 + (Math.random() - 0.5) * 0.5),
+    new Vector3(end[0], end[1], end[2])
+  ]);
+
+  const tubeGeometry = new TubeGeometry(curve, 20, 0.05, 8, false);
 
   return (
-    <mesh position={[(start[0] + end[0]) / 2, midY, 0]} rotation={[0, 0, angle + Math.PI / 2]}>
-      <cylinderGeometry args={[0.05, 0.05, height - 0.3, 8]} />
+    <mesh geometry={tubeGeometry}>
       <meshStandardMaterial color="brown" />
     </mesh>
   );
@@ -34,9 +35,9 @@ const Tree = () => {
   ];
   
   const children = [
-    [-1, -1.5, 0],
-    [0, -1.5, 0],
-    [1, -1.5, 0]
+    [-1, -1.5, Math.random() * 0.6 - 0.3],
+    [0, -1.5, Math.random() * 0.6 - 0.3],
+    [1, -1.5, Math.random() * 0.6 - 0.3]
   ];
 
   const branchStartY = -3.2;
@@ -52,7 +53,7 @@ const Tree = () => {
       ))}
 
       {children.map((child, index) => (
-        <Branch key={"branch-" + index} start={[0, branchStartY, 0]} end={child} />
+        <CurvedBranch key={"branch-" + index} start={[0, branchStartY, 0]} end={child} />
       ))}
     </>
   );
