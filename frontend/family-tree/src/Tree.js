@@ -25,16 +25,24 @@ const ParentConnector = ({ start, end }) => {
 };
 
 const CurvedBranch = ({ start, end }) => {
+  if (!start || !end) return null;
+
+  const randomDirectionX = Math.random() < 0.5 ? -1 : 1;
+  const randomDirectionZ = Math.random() < 0.5 ? -1 : 1;
+
   const curve = new CatmullRomCurve3([
     new Vector3(start[0], start[1], start[2]),
-    new Vector3((start[0] + end[0]) / 2 + (Math.random() - 0.5) * 0.5, start[1] + 1 + (Math.random() - 0.5) * 0.5, (start[2] + end[2]) / 2 + (Math.random() - 0.5) * 0.5),
+    new Vector3(
+      (start[0] + end[0]) / 2 + randomDirectionX * (Math.random() * 1.2),
+      start[1] + 1.5 + (Math.random() - 0.5) * 1.2,
+      (start[2] + end[2]) / 2 + randomDirectionZ * (Math.random() * 1.2)
+    ),
     new Vector3(end[0], end[1], end[2])
   ]);
 
-  const tubeGeometry = new TubeGeometry(curve, 40, 0.1, 8, false);
-
   return (
-    <mesh geometry={tubeGeometry}>
+    <mesh>
+      <tubeGeometry args={[curve, 40, 0.1, 8, false]} />
       <meshStandardMaterial color="brown" />
     </mesh>
   );
@@ -72,8 +80,13 @@ const Tree = () => {
       
       let siblingCount = Object.values(newTree.Smiths).filter(member => member.parents && member.parents[0] === parentConnector[0] && member.parents[1] === parentConnector[1]).length;
       let offset = (siblingCount - 1) * childSpacing * 0.5;
-      let randomDirection = Math.random() < 0.5 ? -1 : 1;
-      newPositions[childId] = [connectorPosition[0] - offset + siblingCount * childSpacing * randomDirection, connectorPosition[1] + 3, connectorPosition[2]];
+      let randomDirectionX = Math.random() < 0.5 ? -1 : 1;
+      let randomDirectionZ = Math.random() < 0.5 ? -1 : 1;
+      newPositions[childId] = [
+        connectorPosition[0] - offset + siblingCount * childSpacing * randomDirectionX,
+        connectorPosition[1] + 3,
+        connectorPosition[2] + randomDirectionZ * (Math.random() * 2)
+      ];
     }
 
     setTree(newTree);
