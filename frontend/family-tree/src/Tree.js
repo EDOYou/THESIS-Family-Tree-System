@@ -49,21 +49,28 @@ const Tree = () => {
   const handleAddMember = (id, type) => {
     let newTree = { ...tree };
     let newPositions = { ...positions };
+    let newParentConnectors = [...parentConnectors];
 
     if (type === "spouse") {
       let spouseId = Object.keys(newTree.Smiths).length;
       newTree.Smiths[`New Spouse ${spouseId}`] = { id: spouseId, spouse: id };
       newPositions[spouseId] = [positions[id][0] + 0.6, positions[id][1], positions[id][2]];
-      setParentConnectors([...parentConnectors, [id, spouseId]]);
+      newParentConnectors.push([id, spouseId]);
     }
 
     if (type === "child") {
       let childId = Object.keys(newTree.Smiths).length;
-      newTree.Smiths[`New Child ${childId}`] = { id: childId, parents: parentConnectors[parentConnectors.length - 1] };
-      let connector = parentConnectors[parentConnectors.length - 1];
-      let connectorPosition = [(positions[connector[0]][0] + positions[connector[1]][0]) / 2, positions[connector[0]][1], positions[connector[0]][2]];
+      let parentConnector = newParentConnectors.find(connector => connector.includes(id));
       
-      let siblingCount = Object.values(newTree.Smiths).filter(member => member.parents && member.parents[0] === connector[0] && member.parents[1] === connector[1]).length;
+      if (!parentConnector) {
+        alert("Error: This parent does not have a spouse connection yet!");
+        return;
+      }
+
+      newTree.Smiths[`New Child ${childId}`] = { id: childId, parents: parentConnector };
+      let connectorPosition = [(positions[parentConnector[0]][0] + positions[parentConnector[1]][0]) / 2, positions[parentConnector[0]][1], positions[parentConnector[0]][2]];
+      
+      let siblingCount = Object.values(newTree.Smiths).filter(member => member.parents && member.parents[0] === parentConnector[0] && member.parents[1] === parentConnector[1]).length;
       let offset = (siblingCount - 1) * childSpacing * 0.5;
       let randomDirection = Math.random() < 0.5 ? -1 : 1;
       newPositions[childId] = [connectorPosition[0] - offset + siblingCount * childSpacing * randomDirection, connectorPosition[1] + 3, connectorPosition[2]];
@@ -71,6 +78,7 @@ const Tree = () => {
 
     setTree(newTree);
     setPositions(newPositions);
+    setParentConnectors(newParentConnectors);
   };
 
   return (
