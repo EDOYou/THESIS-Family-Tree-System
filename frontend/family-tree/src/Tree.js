@@ -52,7 +52,7 @@ const Tree = () => {
   const [tree, setTree] = useState(familyData);
   const [positions, setPositions] = useState({ 0: [0, -3, 0] });
   const [parentConnectors, setParentConnectors] = useState([]);
-  const childSpacing = 2.0;
+  const childSpacing = 4;
 
   const handleAddMember = (id, type) => {
     let newTree = { ...tree };
@@ -79,13 +79,13 @@ const Tree = () => {
       let connectorPosition = [(positions[parentConnector[0]][0] + positions[parentConnector[1]][0]) / 2, positions[parentConnector[0]][1], positions[parentConnector[0]][2]];
       
       let siblingCount = Object.values(newTree.Smiths).filter(member => member.parents && member.parents[0] === parentConnector[0] && member.parents[1] === parentConnector[1]).length;
-      let offset = (siblingCount - 1) * childSpacing * 0.5;
+      let offset = (siblingCount - 1) * childSpacing * 0.7;
       let randomDirectionX = Math.random() < 0.5 ? -1 : 1;
       let randomDirectionZ = Math.random() < 0.5 ? -1 : 1;
       newPositions[childId] = [
         connectorPosition[0] - offset + siblingCount * childSpacing * randomDirectionX,
         connectorPosition[1] + 3,
-        connectorPosition[2] + randomDirectionZ * (Math.random() * 2)
+        connectorPosition[2] + randomDirectionZ * (Math.random() * 2.5)
       ];
     }
 
