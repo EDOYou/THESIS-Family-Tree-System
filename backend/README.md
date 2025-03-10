@@ -82,11 +82,11 @@ mvn spring-boot:run
 ```bash
   com.familytree
   ├── controller
-  │   ├── FamilyMemberController.java
+  │   ├── FamilyTreeController.java
   │   ├── MarriageController.java
   │
   ├── model
-  │   ├── FamilyMember.java
+  │   ├── Person.java
   │   ├── Marriage.java
   │
   ├── repository
