@@ -1,5 +1,8 @@
 package com.familytree.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -14,6 +17,7 @@ import java.util.List;
 @Table(name = "persons")
 @Setter
 @Getter
+@JsonIgnoreProperties(ignoreUnknown = true) // Ignore unknown properties during deserialization
 public class Person {
 
     @Id
@@ -21,7 +25,7 @@ public class Person {
     private Long id;
 
     @NotNull
-    @Size(min=2, max=30)
+    @Size(min = 2, max = 30)
     private String name;
 
     @NotNull
@@ -39,14 +43,25 @@ public class Person {
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "spouse_id")
+    @JsonBackReference(value = "spouse-reference")
     private Person spouse;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
+    @JsonBackReference(value = "children-reference")
     private Person parent;
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @JsonManagedReference(value = "children-reference")
     private List<Person> children = new ArrayList<>();
+
+    public Person() {}
+
+    public Person(String name, Integer age, Gender gender) {
+        this.name = name;
+        this.age = age;
+        this.gender = gender;
+    }
 }

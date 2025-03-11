@@ -64,6 +64,7 @@ const NodeForm = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('Submitting node:', selectedNode);
     try {
       const nodeData = {
         id: selectedNode.id,
@@ -80,13 +81,15 @@ const NodeForm = ({
         spouse: selectedNode.spouse || null,
         parent: selectedNode.parentId ? { id: selectedNode.parentId } : null,
       };
-
+  
+      console.log('Node data to save:', nodeData);
       const updatedNode = await onSave(nodeData, setTree, selectedNode.id);
       const updatedTree = updateNodeInTree(selectedNode, selectedNode.id, updatedNode);
       setTree(updatedTree);
       onClose();
       setError(null);
     } catch (error) {
+      console.error('Error saving node:', error);
       setError('Failed to save the node. Please try again.');
     }
   };
@@ -149,9 +152,11 @@ const NodeForm = ({
         spouse: newSpouseNode,
       });
       setTree(updatedTree);
+      setSelectedNode({ ...newSpouseNode, addingMemberType: null });
       setNewSpouse({ name: '', gender: selectedNode.gender === 'MALE' ? 'FEMALE' : 'MALE' });
       setError(null);
     } catch (error) {
+      console.error('Error in handleAddSpouse:', error);
       setError(error.message || 'Failed to add spouse.');
     }
   };

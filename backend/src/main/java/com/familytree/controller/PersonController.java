@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/persons")
@@ -16,20 +18,29 @@ public class PersonController {
     @Autowired
     private PersonRepository personRepository;
 
+    @GetMapping("/all")
+    public ResponseEntity<List<Person>> getAllPersons() {
+        List<Person> persons = personRepository.findAll();
+        System.out.println("Returning " + persons.size() + " persons: " + persons.stream().map(Person::getName).collect(Collectors.joining(", ")));
+        return ResponseEntity.ok(persons);
+    }
+
     @GetMapping("/root")
     public ResponseEntity<Person> getFamilyTree() {
-        return personRepository.findByParentIsNull()
+        return personRepository.findFirstByParentIsNull()
                 .map(person -> ResponseEntity.ok(person))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public Person createPerson(@Valid @RequestBody Person person) {
+    public ResponseEntity<Person> createPerson(@Valid @RequestBody Person person) {
         System.out.println("Creating person: " + person.getName() + ", ID: " + person.getId());
         if (person.getId() != null) {
             person.setId(null);
         }
-        return personRepository.save(person);
+        person.setChildren(new ArrayList<>());
+        Person savedPerson = personRepository.save(person);
+        return ResponseEntity.ok(savedPerson);
     }
 
     @PutMapping("/{personId}")
@@ -73,7 +84,6 @@ public class PersonController {
                         return ResponseEntity.badRequest().body("A person with this name already exists.");
                     }
                     spouse.setSpouse(null);
-                    spouse.setParent(null);
                     spouse.setChildren(new ArrayList<>());
                     if (spouse.getId() != null) {
                         System.out.println("Warning: Spouse ID is not null (" + spouse.getId() + "). Resetting to null for new entity.");

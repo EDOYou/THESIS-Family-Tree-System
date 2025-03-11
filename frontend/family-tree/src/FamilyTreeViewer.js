@@ -1,57 +1,64 @@
 import React from 'react';
 
-const FamilyTreeViewer = ({ tree, onNodeClick }) => {
-  if (!tree) {
-    return <div>Loading...</div>;
-  }
+const Node = ({ node, onNodeClick }) => {
+    const nodeStyle = {
+      display: 'inline-block',
+      padding: '10px',
+      border: '1px solid #ccc',
+      borderRadius: '5px',
+      backgroundColor: node.gender === 'MALE' ? '#ADD8E6' : '#FFB6C1',
+      cursor: 'pointer',
+    };
+  
+    return (
+      <div style={nodeStyle} onClick={() => onNodeClick(node)}>
+        {node.name}
+      </div>
+    );
+  };
 
-  const renderNode = (node) => (
-    <div
-      key={node.id}
-      style={{
-        border: '1px solid #000',
-        padding: '20px',
-        margin: '10px auto',
-        textAlign: 'center',
-        cursor: 'pointer',
-        backgroundColor: '#f0f0f0',
-        width: '200px',
-        position: 'relative',
-        top: '50%',
-        transform: 'translateY(-50%)',
-      }}
-      onClick={() => onNodeClick(node)}
-    >
-      <div>{node.name}</div>
-      <div>{node.gender}</div>
-      {node.spouse && (
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '10px' }}>
-          <div
-            style={{
-              border: '1px solid #000',
-              padding: '5px',
-              backgroundColor: '#e0e0e0',
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              onNodeClick(node.spouse);
-            }}
-          >
-            {node.spouse.name}
+const FamilyTreeViewer = ({ tree, onNodeClick }) => {
+  if (!tree) return <div>No family tree data available.</div>;
+
+  const renderTree = (node) => {
+    return (
+      <div style={{ margin: '10px', display: 'inline-block', verticalAlign: 'top' }}>
+        <Node node={node} onNodeClick={onNodeClick} />
+        {node.spouse && (
+          <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px' }}>
+            <div style={{ width: '50px', height: '2px', background: '#000' }} />
+            <Node node={node.spouse} onNodeClick={onNodeClick} />
           </div>
-        </div>
-      )}
-      {node.children && node.children.length > 0 && (
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '10px' }}>
-          {node.children.map((child) => renderNode(child))}
-        </div>
-      )}
-    </div>
-  );
+        )}
+        {node.children && node.children.length > 0 && (
+          <div style={{ marginTop: '10px' }}>
+            {node.children.map((child, index) => (
+              <div key={index} style={{ marginLeft: '20px' }}>
+                <div style={{ width: '2px', height: '20px', background: '#000', marginLeft: '25px' }} />
+                {renderTree(child)}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-      {renderNode(tree)}
+    <div>
+      <h2>Family Tree</h2>
+      <p>Welcome to the Shan family tree</p>
+      <p>Click on any one of the family members to add a child or a spouse.</p>
+      <div style={{ textAlign: 'center', marginTop: '20px' }}>
+        {Array.isArray(tree) ? tree.map((root, index) => (
+          <div key={index} style={{ display: 'inline-block', verticalAlign: 'top' }}>
+            {renderTree(root)}
+          </div>
+        )) : renderTree(tree)}
+      </div>
+      <div style={{ textAlign: 'center', marginTop: '20px' }}>
+        <input type="text" placeholder="Search family members" />
+      </div>
     </div>
   );
 };
