@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import FamilyTreeViewer from './FamilyTreeViewer';
 import NodeForm from './nodeForm';
-import { fetchFamilyTree, saveOrUpdateNode } from './nodeService';
-
-const MY_ID = 1;
+import { fetchFamilyTree, createPerson, saveOrUpdateNode, addChild, addSpouse } from './nodeService';
 
 const App = () => {
   const [selectedNode, setSelectedNode] = useState(null);
@@ -12,7 +10,6 @@ const App = () => {
   const [error, setError] = useState(null);
 
   const defaultMeNode = {
-    id: MY_ID,
     name: "Me",
     gender: "MALE",
     occupation: "",
@@ -36,11 +33,10 @@ const App = () => {
       } catch (error) {
         if (error.response && error.response.status === 404) {
           console.log('Database is empty, initializing with default "Me" node');
-          setTree(defaultMeNode);
-          setSelectedNode(defaultMeNode);
           try {
-            const savedNode = await saveOrUpdateNode(defaultMeNode, setTree, MY_ID);
+            const savedNode = await createPerson(defaultMeNode);
             setTree(savedNode);
+            setSelectedNode(savedNode);
             console.log('Default "Me" node saved to backend with ID:', savedNode.id);
           } catch (saveError) {
             console.error('Error saving default node:', saveError.message);
@@ -64,20 +60,32 @@ const App = () => {
     setRefreshKey((prev) => prev + 1);
   };
 
+  const handleAddMember = (type) => {
+    if (type === 'child' && selectedNode.spouse === null) {
+      setError('Cannot add a child without a spouse.');
+      return;
+    }
+    setSelectedNode({ ...selectedNode, addingMemberType: type });
+  };
+
   return (
     <div style={{ textAlign: 'center', padding: '20px' }}>
       {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
       {tree && <FamilyTreeViewer tree={tree} onNodeClick={handleNodeClick} />}
       {selectedNode && (
         <NodeForm
-          selectedNode={selectedNode}
-          onSave={saveOrUpdateNode}
-          onClose={() => setSelectedNode(null)}
-          onRefresh={handleRefreshTree}
-          error={error}
-          setError={setError}
-          setTree={setTree}
-        />
+        selectedNode={selectedNode}
+        setSelectedNode={setSelectedNode}
+        onSave={saveOrUpdateNode}
+        onClose={() => setSelectedNode(null)}
+        onRefresh={handleRefreshTree}
+        onAddMember={handleAddMember}
+        error={error}
+        setError={setError}
+        setTree={setTree}
+        addChild={addChild}
+        addSpouse={addSpouse}
+      />
       )}
     </div>
   );
