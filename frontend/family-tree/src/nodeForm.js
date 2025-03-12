@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { updateNodeInTree } from './treeUtils';
+import React, { useState, useEffect } from "react";
+import { updateNodeInTree } from "./treeUtils";
 
 const NodeForm = ({
   selectedNode,
@@ -15,40 +15,36 @@ const NodeForm = ({
   addSpouse,
 }) => {
   const [formData, setFormData] = useState({
-    name: '',
-    gender: 'MALE',
-    occupation: '',
-    age: '',
-    birthDate: '',
-    deathDate: '',
-    birthPlace: '',
-    deathPlace: '',
+    name: "",
+    gender: "MALE",
+    occupation: "",
+    age: "",
+    birthDate: "",
+    deathDate: "",
+    birthPlace: "",
+    deathPlace: "",
     hasSubTree: false,
   });
-  const [newChild, setNewChild] = useState({ name: '', gender: 'MALE' });
-  const [newSpouse, setNewSpouse] = useState({ name: '', gender: selectedNode?.gender === 'MALE' ? 'FEMALE' : 'MALE' });
+  const [newChild, setNewChild] = useState({ name: "", gender: "MALE" });
+  const [newSpouse, setNewSpouse] = useState({
+    name: "",
+    gender: selectedNode?.gender === "MALE" ? "FEMALE" : "MALE",
+  });
 
   useEffect(() => {
-    if (selectedNode && !selectedNode.addingMemberType) {
-      setFormData({
-        name: selectedNode.name || '',
-        gender: selectedNode.gender || 'MALE',
-        occupation: selectedNode.occupation || '',
-        age: selectedNode.age || '',
-        birthDate: selectedNode.birthDate || '',
-        deathDate: selectedNode.deathDate || '',
-        birthPlace: selectedNode.birthPlace || '',
-        deathPlace: selectedNode.deathPlace || '',
-        hasSubTree: selectedNode.hasSubTree || false,
-      });
+    if (selectedNode && selectedNode.addingMemberType === "spouse") {
+      setNewSpouse((prev) => ({
+        ...prev,
+        gender: selectedNode.gender === "MALE" ? "FEMALE" : "MALE",
+      }));
     }
-  }, [selectedNode]);
+  }, [selectedNode, selectedNode?.addingMemberType]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: type === "checkbox" ? checked : value,
     });
   };
 
@@ -64,7 +60,7 @@ const NodeForm = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Submitting node:', selectedNode);
+    console.log("Submitting node:", selectedNode);
     try {
       const nodeData = {
         id: selectedNode.id,
@@ -81,29 +77,33 @@ const NodeForm = ({
         spouse: selectedNode.spouse || null,
         parent: selectedNode.parentId ? { id: selectedNode.parentId } : null,
       };
-  
-      console.log('Node data to save:', nodeData);
+
+      console.log("Node data to save:", nodeData);
       const updatedNode = await onSave(nodeData, setTree, selectedNode.id);
-      const updatedTree = updateNodeInTree(selectedNode, selectedNode.id, updatedNode);
+      const updatedTree = updateNodeInTree(
+        selectedNode,
+        selectedNode.id,
+        updatedNode
+      );
       setTree(updatedTree);
       onClose();
       setError(null);
     } catch (error) {
-      console.error('Error saving node:', error);
-      setError('Failed to save the node. Please try again.');
+      console.error("Error saving node:", error);
+      setError("Failed to save the node. Please try again.");
     }
   };
 
   const handleAddChild = async () => {
     try {
       if (!newChild.name) {
-        setError('Child name is required.');
+        setError("Child name is required.");
         return;
       }
       const childData = {
         name: newChild.name,
         gender: newChild.gender,
-        occupation: '',
+        occupation: "",
         age: null,
         birthDate: null,
         deathDate: null,
@@ -119,23 +119,23 @@ const NodeForm = ({
         children: [...(selectedNode.children || []), newChildNode],
       });
       setTree(updatedTree);
-      setNewChild({ name: '', gender: 'MALE' });
+      setNewChild({ name: "", gender: "MALE" });
       setError(null);
     } catch (error) {
-      setError(error.message || 'Failed to add child.');
+      setError(error.message || "Failed to add child.");
     }
   };
 
   const handleAddSpouse = async () => {
     try {
       if (!newSpouse.name) {
-        setError('Spouse name is required.');
+        setError("Spouse name is required.");
         return;
       }
       const spouseData = {
         name: newSpouse.name,
         gender: newSpouse.gender,
-        occupation: '',
+        occupation: "",
         age: null,
         birthDate: null,
         deathDate: null,
@@ -145,7 +145,7 @@ const NodeForm = ({
         deathPlace: null,
         hasSubTree: false,
       };
-      console.log('Sending spouseData:', spouseData);
+      console.log("Sending spouseData:", spouseData);
       const newSpouseNode = await addSpouse(selectedNode.id, spouseData);
       const updatedTree = updateNodeInTree(selectedNode, selectedNode.id, {
         ...selectedNode,
@@ -153,200 +153,219 @@ const NodeForm = ({
       });
       setTree(updatedTree);
       setSelectedNode({ ...newSpouseNode, addingMemberType: null });
-      setNewSpouse({ name: '', gender: selectedNode.gender === 'MALE' ? 'FEMALE' : 'MALE' });
+      setNewSpouse({
+        name: "",
+        gender: selectedNode.gender === "MALE" ? "FEMALE" : "MALE",
+      });
       setError(null);
     } catch (error) {
-      console.error('Error in handleAddSpouse:', error);
-      setError(error.message || 'Failed to add spouse.');
+      console.error("Error in handleAddSpouse:", error);
+      setError(error.message || "Failed to add spouse.");
     }
   };
 
   return (
-    <div style={{ padding: '20px' }}>
+    <div style={{ padding: "20px" }}>
       <h2>Edit Node: {selectedNode.name}</h2>
-      {error && <div style={{ color: 'red' }}>{error}</div>}
+      {error && <div style={{ color: "red" }}>{error}</div>}
       {!selectedNode.addingMemberType && (
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <label style={{ width: '150px' }}>Name:</label>
+        <form
+          onSubmit={handleSubmit}
+          style={{ display: "flex", flexDirection: "column", gap: "10px" }}
+        >
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <label style={{ width: "150px" }}>Name:</label>
             <input
               type="text"
               name="name"
               value={formData.name}
               onChange={handleInputChange}
               required
-              style={{ padding: '5px', width: '200px' }}
+              style={{ padding: "5px", width: "200px" }}
             />
           </div>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <label style={{ width: '150px' }}>Gender:</label>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <label style={{ width: "150px" }}>Gender:</label>
             <select
               name="gender"
               value={formData.gender}
               onChange={handleInputChange}
-              style={{ padding: '5px', width: '200px' }}
+              style={{ padding: "5px", width: "200px" }}
             >
               <option value="MALE">Male</option>
               <option value="FEMALE">Female</option>
             </select>
           </div>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <label style={{ width: '150px' }}>Occupation:</label>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <label style={{ width: "150px" }}>Occupation:</label>
             <input
               type="text"
               name="occupation"
               value={formData.occupation}
               onChange={handleInputChange}
-              style={{ padding: '5px', width: '200px' }}
+              style={{ padding: "5px", width: "200px" }}
             />
           </div>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <label style={{ width: '150px' }}>Age:</label>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <label style={{ width: "150px" }}>Age:</label>
             <input
               type="number"
               name="age"
               value={formData.age}
               onChange={handleInputChange}
-              style={{ padding: '5px', width: '200px' }}
+              style={{ padding: "5px", width: "200px" }}
             />
           </div>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <label style={{ width: '150px' }}>Birth Date:</label>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <label style={{ width: "150px" }}>Birth Date:</label>
             <input
               type="date"
               name="birthDate"
               value={formData.birthDate}
               onChange={handleInputChange}
-              style={{ padding: '5px', width: '200px' }}
+              style={{ padding: "5px", width: "200px" }}
             />
           </div>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <label style={{ width: '150px' }}>Death Date:</label>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <label style={{ width: "150px" }}>Death Date:</label>
             <input
               type="date"
               name="deathDate"
               value={formData.deathDate}
               onChange={handleInputChange}
-              style={{ padding: '5px', width: '200px' }}
+              style={{ padding: "5px", width: "200px" }}
             />
           </div>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <label style={{ width: '150px' }}>Birth Place:</label>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <label style={{ width: "150px" }}>Birth Place:</label>
             <input
               type="text"
               name="birthPlace"
               value={formData.birthPlace}
               onChange={handleInputChange}
-              style={{ padding: '5px', width: '200px' }}
+              style={{ padding: "5px", width: "200px" }}
             />
           </div>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <label style={{ width: '150px' }}>Death Place:</label>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <label style={{ width: "150px" }}>Death Place:</label>
             <input
               type="text"
               name="deathPlace"
               value={formData.deathPlace}
               onChange={handleInputChange}
-              style={{ padding: '5px', width: '200px' }}
+              style={{ padding: "5px", width: "200px" }}
             />
           </div>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <label style={{ width: '150px' }}>Has Sub Tree:</label>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <label style={{ width: "150px" }}>Has Sub Tree:</label>
             <input
               type="checkbox"
               name="hasSubTree"
               checked={formData.hasSubTree}
               onChange={handleInputChange}
-              style={{ marginLeft: '5px' }}
+              style={{ marginLeft: "5px" }}
             />
           </div>
-          <button type="submit" style={{ padding: '5px 10px', marginTop: '10px' }}>
+          <button
+            type="submit"
+            style={{ padding: "5px 10px", marginTop: "10px" }}
+          >
             Save
           </button>
           <button
             type="button"
-            onClick={() => onAddMember('spouse')}
-            style={{ padding: '5px 10px', marginTop: '10px' }}
+            onClick={() => onAddMember("spouse")}
+            style={{ padding: "5px 10px", marginTop: "10px" }}
           >
             Add Spouse
           </button>
           <button
             type="button"
-            onClick={() => onAddMember('child')}
-            style={{ padding: '5px 10px', marginTop: '10px' }}
+            onClick={() => onAddMember("child")}
+            style={{ padding: "5px 10px", marginTop: "10px" }}
           >
             Add Child
           </button>
         </form>
       )}
-      {selectedNode.addingMemberType === 'child' && (
-        <div style={{ marginTop: '20px' }}>
+      {selectedNode.addingMemberType === "child" && (
+        <div style={{ marginTop: "20px" }}>
           <h3>Add Child</h3>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <label style={{ width: '150px' }}>Child Name:</label>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <label style={{ width: "150px" }}>Child Name:</label>
             <input
               type="text"
               name="name"
               value={newChild.name}
               onChange={handleChildInputChange}
-              style={{ padding: '5px', width: '200px' }}
+              style={{ padding: "5px", width: "200px" }}
             />
           </div>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <label style={{ width: '150px' }}>Gender:</label>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <label style={{ width: "150px" }}>Gender:</label>
             <select
               name="gender"
               value={newChild.gender}
               onChange={handleChildInputChange}
-              style={{ padding: '5px', width: '200px' }}
+              style={{ padding: "5px", width: "200px" }}
             >
               <option value="MALE">Male</option>
               <option value="FEMALE">Female</option>
             </select>
           </div>
-          <button onClick={handleAddChild} style={{ padding: '5px 10px', marginTop: '10px' }}>
+          <button
+            onClick={handleAddChild}
+            style={{ padding: "5px 10px", marginTop: "10px" }}
+          >
             Add Child
           </button>
           <button
-            onClick={() => setSelectedNode({ ...selectedNode, addingMemberType: null })}
-            style={{ padding: '5px 10px', marginTop: '10px' }}
+            onClick={() =>
+              setSelectedNode({ ...selectedNode, addingMemberType: null })
+            }
+            style={{ padding: "5px 10px", marginTop: "10px" }}
           >
             Cancel
           </button>
         </div>
       )}
-      {selectedNode.addingMemberType === 'spouse' && (
-        <div style={{ marginTop: '20px' }}>
+      {selectedNode.addingMemberType === "spouse" && (
+        <div style={{ marginTop: "20px" }}>
           <h3>Add Spouse</h3>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <label style={{ width: '150px' }}>Spouse Name:</label>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <label style={{ width: "150px" }}>Spouse Name:</label>
             <input
               type="text"
               name="name"
               value={newSpouse.name}
               onChange={handleSpouseInputChange}
-              style={{ padding: '5px', width: '200px' }}
+              style={{ padding: "5px", width: "200px" }}
             />
           </div>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <label style={{ width: '150px' }}>Gender:</label>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <label style={{ width: "150px" }}>Gender:</label>
             <select
               name="gender"
               value={newSpouse.gender}
               onChange={handleSpouseInputChange}
-              style={{ padding: '5px', width: '200px' }}
+              style={{ padding: "5px", width: "200px" }}
               disabled
             >
               <option value="MALE">Male</option>
               <option value="FEMALE">Female</option>
             </select>
           </div>
-          <button onClick={handleAddSpouse} style={{ padding: '5px 10px', marginTop: '10px' }}>
+          <button
+            onClick={handleAddSpouse}
+            style={{ padding: "5px 10px", marginTop: "10px" }}
+          >
             Add Spouse
           </button>
           <button
-            onClick={() => setSelectedNode({ ...selectedNode, addingMemberType: null })}
-            style={{ padding: '5px 10px', marginTop: '10px' }}
+            onClick={() =>
+              setSelectedNode({ ...selectedNode, addingMemberType: null })
+            }
+            style={{ padding: "5px 10px", marginTop: "10px" }}
           >
             Cancel
           </button>

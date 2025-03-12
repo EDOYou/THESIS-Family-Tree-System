@@ -1,6 +1,7 @@
 package com.familytree.controller;
 
 import com.familytree.model.Person;
+import com.familytree.model.dto.PersonDTO;
 import com.familytree.repository.PersonRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -19,35 +20,37 @@ public class PersonController {
     private PersonRepository personRepository;
 
     @GetMapping("/all")
-    public ResponseEntity<List<Person>> getAllPersons() {
+    public ResponseEntity<List<PersonDTO>> getAllPersons() {
         List<Person> persons = personRepository.findAll();
-        System.out.println("Returning " + persons.size() + " persons: " + persons.stream().map(Person::getName).collect(Collectors.joining(", ")));
-        return ResponseEntity.ok(persons);
+        List<PersonDTO> personDTOs = persons.stream().map(PersonDTO::new).collect(Collectors.toList());
+        System.out.println("Returning " + personDTOs.size() + " persons: " + personDTOs.stream().map(PersonDTO::getName).collect(Collectors.joining(", ")));
+        return ResponseEntity.ok(personDTOs);
     }
 
     @GetMapping("/root")
-    public ResponseEntity<Person> getFamilyTree() {
+    public ResponseEntity<PersonDTO> getFamilyTree() {
         return personRepository.findFirstByParentIsNull()
-                .map(person -> ResponseEntity.ok(person))
+                .map(person -> ResponseEntity.ok(new PersonDTO(person)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<Person> createPerson(@Valid @RequestBody Person person) {
+    public ResponseEntity<PersonDTO> createPerson(@Valid @RequestBody Person person) {
         System.out.println("Creating person: " + person.getName() + ", ID: " + person.getId());
         if (person.getId() != null) {
             person.setId(null);
         }
         person.setChildren(new ArrayList<>());
         Person savedPerson = personRepository.save(person);
-        return ResponseEntity.ok(savedPerson);
+        return ResponseEntity.ok(new PersonDTO(savedPerson));
     }
 
     @PutMapping("/{personId}")
-    public Person saveOrUpdatePerson(@PathVariable Long personId, @Valid @RequestBody Person person) {
+    public PersonDTO saveOrUpdatePerson(@PathVariable Long personId, @Valid @RequestBody Person person) {
         System.out.println("Updating person: " + person.getName() + ", ID: " + person.getId());
         person.setId(personId);
-        return personRepository.save(person);
+        Person savedPerson = personRepository.save(person);
+        return new PersonDTO(savedPerson);
     }
 
     @PostMapping("/{personId}/child")
@@ -64,7 +67,7 @@ public class PersonController {
                     Person savedChild = personRepository.save(child);
                     person.getChildren().add(savedChild);
                     personRepository.save(person);
-                    return ResponseEntity.ok(savedChild);
+                    return ResponseEntity.ok(new PersonDTO(savedChild));
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -95,7 +98,7 @@ public class PersonController {
                     Person savedPerson = personRepository.save(person);
                     savedSpouse.setSpouse(savedPerson);
                     personRepository.save(savedSpouse);
-                    return ResponseEntity.ok(savedSpouse);
+                    return ResponseEntity.ok(new PersonDTO(savedSpouse));
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
