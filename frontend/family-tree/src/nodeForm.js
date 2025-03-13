@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { updateNodeInTree } from "./treeUtils";
 import NodeDetailsForm from "./NodeDetailsForm";
 import AddChildForm from "./AddChildForm";
 import AddSpouseForm from "./AddSpouseForm";
@@ -79,16 +78,15 @@ const NodeForm = ({
         deathPlace: formData.deathPlace || null,
         hasSubTree: formData.hasSubTree,
         children: selectedNode.children || [],
-        spouse: selectedNode.spouse || null,
-        parent: selectedNode.parentId ? { id: selectedNode.parentId } : null,
+        spouses: selectedNode.spouses || [],
+        parents: selectedNode.parents || [],
       };
       const updatedNode = await onSave(nodeData, setTree, selectedNode.id);
-      const updatedTree = updateNodeInTree(
-        selectedNode,
-        selectedNode.id,
-        updatedNode
+      setTree((prevTree) =>
+        prevTree.map((node) =>
+          node.id === updatedNode.id ? { ...node, ...updatedNode } : node
+        )
       );
-      setTree(updatedTree);
       onClose();
       setError(null);
     } catch (error) {
@@ -117,11 +115,40 @@ const NodeForm = ({
         hasSubTree: false,
       };
       const newChildNode = await addChild(selectedNode.id, childData);
-      const updatedTree = updateNodeInTree(selectedNode, selectedNode.id, {
-        ...selectedNode,
-        children: [...(selectedNode.children || []), newChildNode],
+      setTree((prevTree) => {
+        const updatedTree = prevTree.map((node) => {
+          if (node.id === selectedNode.id) {
+            return {
+              ...node,
+              children: [...(node.children || []), newChildNode.id.toString()],
+            };
+          }
+          if (selectedNode.spouses?.includes(node.id)) {
+            return {
+              ...node,
+              children: [...(node.children || []), newChildNode.id.toString()],
+            };
+          }
+          return node;
+        });
+
+        return [
+          ...updatedTree,
+          {
+            id: newChildNode.id.toString(),
+            name: newChildNode.name,
+            gender: newChildNode.gender,
+            parents: [
+              selectedNode.id.toString(),
+              ...(selectedNode.spouses || []).map((spouseId) =>
+                spouseId.toString()
+              ),
+            ],
+            children: [],
+            spouses: [],
+          },
+        ];
       });
-      setTree(updatedTree);
       setNewChild({ name: "", gender: "MALE" });
       setError(null);
     } catch (error) {
@@ -149,11 +176,28 @@ const NodeForm = ({
         hasSubTree: false,
       };
       const newSpouseNode = await addSpouse(selectedNode.id, spouseData);
-      const updatedTree = updateNodeInTree(selectedNode, selectedNode.id, {
-        ...selectedNode,
-        spouse: newSpouseNode,
+      setTree((prevTree) => {
+        const updatedTree = prevTree.map((node) => {
+          if (node.id === selectedNode.id) {
+            return {
+              ...node,
+              spouses: [...(node.spouses || []), newSpouseNode.id.toString()],
+            };
+          }
+          return node;
+        });
+        return [
+          ...updatedTree,
+          {
+            id: newSpouseNode.id.toString(),
+            name: newSpouseNode.name,
+            gender: newSpouseNode.gender,
+            parents: [],
+            children: [...(selectedNode.children || [])],
+            spouses: [selectedNode.id.toString()],
+          },
+        ];
       });
-      setTree(updatedTree);
       setSelectedNode({ ...newSpouseNode, addingMemberType: null });
       setNewSpouse({
         name: "",

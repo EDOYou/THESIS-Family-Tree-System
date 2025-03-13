@@ -61,11 +61,13 @@ const App = () => {
       }
     };
     loadTree();
-  }, [refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [refreshKey]);
 
   const handleNodeClick = (node) => {
     logDebug("Clicked node:", node, debug);
-    setSelectedNode(node);
+
+    const fullNode = tree.find((n) => n.id === node.id);
+    setSelectedNode(fullNode);
     setError(null);
   };
 
@@ -74,7 +76,7 @@ const App = () => {
   };
 
   const handleAddMember = (type) => {
-    if (type === "child" && selectedNode?.spouse === null) {
+    if (type === "child" && !selectedNode.spouses?.length) {
       setError("Cannot add a child without a spouse.");
       return;
     }
