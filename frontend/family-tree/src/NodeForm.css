@@ -1,0 +1,37 @@
+.node-form-container {
+  padding: 20px;
+}
+
+.error-message {
+  color: red;
+}
+
+.node-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.form-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.label {
+  width: 150px;
+}
+
+.input-field {
+  padding: 5px;
+  width: 200px;
+}
+
+.button {
+  padding: 5px 10px;
+  margin-top: 10px;
+}
+
+.add-member-section {
+  margin-top: 20px;
+}

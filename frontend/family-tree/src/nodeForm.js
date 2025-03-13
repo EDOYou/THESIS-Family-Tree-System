@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import { updateNodeInTree } from "./treeUtils";
+import NodeDetailsForm from "./NodeDetailsForm";
+import AddChildForm from "./AddChildForm";
+import AddSpouseForm from "./AddSpouseForm";
+import { ERROR_MESSAGES } from "./constants";
+import "./NodeForm.css";
 
 const NodeForm = ({
   selectedNode,
@@ -15,15 +21,15 @@ const NodeForm = ({
   addSpouse,
 }) => {
   const [formData, setFormData] = useState({
-    name: "",
-    gender: "MALE",
-    occupation: "",
-    age: "",
-    birthDate: "",
-    deathDate: "",
-    birthPlace: "",
-    deathPlace: "",
-    hasSubTree: false,
+    name: selectedNode?.name || "",
+    gender: selectedNode?.gender || "MALE",
+    occupation: selectedNode?.occupation || "",
+    age: selectedNode?.age || "",
+    birthDate: selectedNode?.birthDate || "",
+    deathDate: selectedNode?.deathDate || "",
+    birthPlace: selectedNode?.birthPlace || "",
+    deathPlace: selectedNode?.deathPlace || "",
+    hasSubTree: selectedNode?.hasSubTree || false,
   });
   const [newChild, setNewChild] = useState({ name: "", gender: "MALE" });
   const [newSpouse, setNewSpouse] = useState({
@@ -60,7 +66,6 @@ const NodeForm = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Submitting node:", selectedNode);
     try {
       const nodeData = {
         id: selectedNode.id,
@@ -77,8 +82,6 @@ const NodeForm = ({
         spouse: selectedNode.spouse || null,
         parent: selectedNode.parentId ? { id: selectedNode.parentId } : null,
       };
-
-      console.log("Node data to save:", nodeData);
       const updatedNode = await onSave(nodeData, setTree, selectedNode.id);
       const updatedTree = updateNodeInTree(
         selectedNode,
@@ -90,14 +93,14 @@ const NodeForm = ({
       setError(null);
     } catch (error) {
       console.error("Error saving node:", error);
-      setError("Failed to save the node. Please try again.");
+      setError(ERROR_MESSAGES.SAVE_FAILED);
     }
   };
 
   const handleAddChild = async () => {
     try {
       if (!newChild.name) {
-        setError("Child name is required.");
+        setError(ERROR_MESSAGES.CHILD_NAME_REQUIRED);
         return;
       }
       const childData = {
@@ -122,14 +125,14 @@ const NodeForm = ({
       setNewChild({ name: "", gender: "MALE" });
       setError(null);
     } catch (error) {
-      setError(error.message || "Failed to add child.");
+      setError(error.message || ERROR_MESSAGES.ADD_CHILD_FAILED);
     }
   };
 
   const handleAddSpouse = async () => {
     try {
       if (!newSpouse.name) {
-        setError("Spouse name is required.");
+        setError(ERROR_MESSAGES.SPOUSE_NAME_REQUIRED);
         return;
       }
       const spouseData = {
@@ -145,7 +148,6 @@ const NodeForm = ({
         deathPlace: null,
         hasSubTree: false,
       };
-      console.log("Sending spouseData:", spouseData);
       const newSpouseNode = await addSpouse(selectedNode.id, spouseData);
       const updatedTree = updateNodeInTree(selectedNode, selectedNode.id, {
         ...selectedNode,
@@ -160,219 +162,58 @@ const NodeForm = ({
       setError(null);
     } catch (error) {
       console.error("Error in handleAddSpouse:", error);
-      setError(error.message || "Failed to add spouse.");
+      setError(error.message || ERROR_MESSAGES.ADD_SPOUSE_FAILED);
     }
   };
 
+  const cancelAddMember = () => {
+    setSelectedNode({ ...selectedNode, addingMemberType: null });
+  };
+
   return (
-    <div style={{ padding: "20px" }}>
+    <div className="node-form-container">
       <h2>Edit Node: {selectedNode.name}</h2>
-      {error && <div style={{ color: "red" }}>{error}</div>}
+      {error && <div className="error-message">{error}</div>}
       {!selectedNode.addingMemberType && (
-        <form
-          onSubmit={handleSubmit}
-          style={{ display: "flex", flexDirection: "column", gap: "10px" }}
-        >
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <label style={{ width: "150px" }}>Name:</label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              required
-              style={{ padding: "5px", width: "200px" }}
-            />
-          </div>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <label style={{ width: "150px" }}>Gender:</label>
-            <select
-              name="gender"
-              value={formData.gender}
-              onChange={handleInputChange}
-              style={{ padding: "5px", width: "200px" }}
-            >
-              <option value="MALE">Male</option>
-              <option value="FEMALE">Female</option>
-            </select>
-          </div>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <label style={{ width: "150px" }}>Occupation:</label>
-            <input
-              type="text"
-              name="occupation"
-              value={formData.occupation}
-              onChange={handleInputChange}
-              style={{ padding: "5px", width: "200px" }}
-            />
-          </div>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <label style={{ width: "150px" }}>Age:</label>
-            <input
-              type="number"
-              name="age"
-              value={formData.age}
-              onChange={handleInputChange}
-              style={{ padding: "5px", width: "200px" }}
-            />
-          </div>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <label style={{ width: "150px" }}>Birth Date:</label>
-            <input
-              type="date"
-              name="birthDate"
-              value={formData.birthDate}
-              onChange={handleInputChange}
-              style={{ padding: "5px", width: "200px" }}
-            />
-          </div>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <label style={{ width: "150px" }}>Death Date:</label>
-            <input
-              type="date"
-              name="deathDate"
-              value={formData.deathDate}
-              onChange={handleInputChange}
-              style={{ padding: "5px", width: "200px" }}
-            />
-          </div>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <label style={{ width: "150px" }}>Birth Place:</label>
-            <input
-              type="text"
-              name="birthPlace"
-              value={formData.birthPlace}
-              onChange={handleInputChange}
-              style={{ padding: "5px", width: "200px" }}
-            />
-          </div>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <label style={{ width: "150px" }}>Death Place:</label>
-            <input
-              type="text"
-              name="deathPlace"
-              value={formData.deathPlace}
-              onChange={handleInputChange}
-              style={{ padding: "5px", width: "200px" }}
-            />
-          </div>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <label style={{ width: "150px" }}>Has Sub Tree:</label>
-            <input
-              type="checkbox"
-              name="hasSubTree"
-              checked={formData.hasSubTree}
-              onChange={handleInputChange}
-              style={{ marginLeft: "5px" }}
-            />
-          </div>
-          <button
-            type="submit"
-            style={{ padding: "5px 10px", marginTop: "10px" }}
-          >
-            Save
-          </button>
-          <button
-            type="button"
-            onClick={() => onAddMember("spouse")}
-            style={{ padding: "5px 10px", marginTop: "10px" }}
-          >
-            Add Spouse
-          </button>
-          <button
-            type="button"
-            onClick={() => onAddMember("child")}
-            style={{ padding: "5px 10px", marginTop: "10px" }}
-          >
-            Add Child
-          </button>
-        </form>
+        <NodeDetailsForm
+          formData={formData}
+          handleInputChange={handleInputChange}
+          handleSubmit={handleSubmit}
+          onAddMember={onAddMember}
+        />
       )}
       {selectedNode.addingMemberType === "child" && (
-        <div style={{ marginTop: "20px" }}>
-          <h3>Add Child</h3>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <label style={{ width: "150px" }}>Child Name:</label>
-            <input
-              type="text"
-              name="name"
-              value={newChild.name}
-              onChange={handleChildInputChange}
-              style={{ padding: "5px", width: "200px" }}
-            />
-          </div>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <label style={{ width: "150px" }}>Gender:</label>
-            <select
-              name="gender"
-              value={newChild.gender}
-              onChange={handleChildInputChange}
-              style={{ padding: "5px", width: "200px" }}
-            >
-              <option value="MALE">Male</option>
-              <option value="FEMALE">Female</option>
-            </select>
-          </div>
-          <button
-            onClick={handleAddChild}
-            style={{ padding: "5px 10px", marginTop: "10px" }}
-          >
-            Add Child
-          </button>
-          <button
-            onClick={() =>
-              setSelectedNode({ ...selectedNode, addingMemberType: null })
-            }
-            style={{ padding: "5px 10px", marginTop: "10px" }}
-          >
-            Cancel
-          </button>
-        </div>
+        <AddChildForm
+          newChild={newChild}
+          handleChildInputChange={handleChildInputChange}
+          handleAddChild={handleAddChild}
+          cancelAddMember={cancelAddMember}
+        />
       )}
       {selectedNode.addingMemberType === "spouse" && (
-        <div style={{ marginTop: "20px" }}>
-          <h3>Add Spouse</h3>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <label style={{ width: "150px" }}>Spouse Name:</label>
-            <input
-              type="text"
-              name="name"
-              value={newSpouse.name}
-              onChange={handleSpouseInputChange}
-              style={{ padding: "5px", width: "200px" }}
-            />
-          </div>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <label style={{ width: "150px" }}>Gender:</label>
-            <select
-              name="gender"
-              value={newSpouse.gender}
-              onChange={handleSpouseInputChange}
-              style={{ padding: "5px", width: "200px" }}
-              disabled
-            >
-              <option value="MALE">Male</option>
-              <option value="FEMALE">Female</option>
-            </select>
-          </div>
-          <button
-            onClick={handleAddSpouse}
-            style={{ padding: "5px 10px", marginTop: "10px" }}
-          >
-            Add Spouse
-          </button>
-          <button
-            onClick={() =>
-              setSelectedNode({ ...selectedNode, addingMemberType: null })
-            }
-            style={{ padding: "5px 10px", marginTop: "10px" }}
-          >
-            Cancel
-          </button>
-        </div>
+        <AddSpouseForm
+          newSpouse={newSpouse}
+          handleSpouseInputChange={handleSpouseInputChange}
+          handleAddSpouse={handleAddSpouse}
+          cancelAddMember={cancelAddMember}
+        />
       )}
     </div>
   );
+};
+
+NodeForm.propTypes = {
+  selectedNode: PropTypes.object.isRequired,
+  setSelectedNode: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onRefresh: PropTypes.func.isRequired,
+  onAddMember: PropTypes.func.isRequired,
+  error: PropTypes.string,
+  setError: PropTypes.func.isRequired,
+  setTree: PropTypes.func.isRequired,
+  addChild: PropTypes.func.isRequired,
+  addSpouse: PropTypes.func.isRequired,
 };
 
 export default NodeForm;
