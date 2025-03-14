@@ -45,11 +45,8 @@ const FamilyTreeViewer = ({ tree, onNodeClick }) => {
       rels.parents.forEach((parentId) => {
         const parent = tree.find((n) => String(n.id) === parentId);
         if (parent) {
-          if (parent.gender.toLowerCase() === "male") {
-            father = parentId;
-          } else if (parent.gender.toLowerCase() === "female") {
-            mother = parentId;
-          }
+          if (parent.gender?.toLowerCase() === "male") father = parentId;
+          else if (parent.gender?.toLowerCase() === "female") mother = parentId;
         }
       });
     }
@@ -61,7 +58,7 @@ const FamilyTreeViewer = ({ tree, onNodeClick }) => {
       id,
       data: {
         gender: (node.gender ?? "unknown").toLowerCase(),
-        ...(node.name && { "first name": node.name, "last name": "" }),
+        ...(node.name ? { "first name": node.name, "last name": "" } : {}),
         ...nodeData,
       },
       rels: {
@@ -72,16 +69,14 @@ const FamilyTreeViewer = ({ tree, onNodeClick }) => {
       },
     };
   });
+
   console.log(
     "Transformed tree with IDs:",
     transformedTree.map((n) => n.id)
   );
   console.log(
     "Transformed tree relationships:",
-    transformedTree.map((node) => ({
-      id: node.id,
-      rels: node.rels,
-    }))
+    transformedTree.map((node) => ({ id: node.id, rels: node.rels }))
   );
   const uniqueIds = new Set(transformedTree.map((n) => n.id));
   console.log(
@@ -101,18 +96,38 @@ const FamilyTreeViewer = ({ tree, onNodeClick }) => {
     if (!containerRef.current || !transformedTree.length) return;
 
     const currentContainer = containerRef.current;
-    let chartInstance = null;
-    let cardInstance = null;
+    let chartInstance = chartInstanceRef.current;
+    let cardInstance = cardInstanceRef.current;
 
     try {
+      d3.select(currentContainer).selectAll("*").remove();
+
+      const containerStyle = window.getComputedStyle(currentContainer);
+      const width = parseInt(containerStyle.width, 10) || 1200;
+      const height = parseInt(containerStyle.height, 10) || 800;
+      currentContainer.style.width = `${width}px`;
+      currentContainer.style.height = `${height}px`;
+
+      chartInstance = f3.createChart(currentContainer, transformedTree);
+      chartInstanceRef.current = chartInstance;
+
       const svg = d3.select(currentContainer).select("svg.main_svg");
       if (svg.empty()) {
-        chartInstance = f3.createChart(currentContainer, transformedTree);
-      } else {
-        svg.remove();
-        chartInstance = f3.createChart(currentContainer, transformedTree);
+        throw new Error("SVG not created by createChart");
       }
-      chartInstanceRef.current = chartInstance;
+      console.log("SVG created:", svg.node());
+
+      if (!svg.node().__zoomObj) {
+        console.warn(
+          "Zoom behavior not initialized by createChart, attempting manual setup"
+        );
+        const zoom = d3.zoom().on("zoom", (e) => {
+          svg.select(".view").attr("transform", e.transform);
+        });
+        svg.call(zoom);
+        svg.node().__zoomObj = zoom;
+      }
+
       cardInstance = chartInstance.setCard(f3.CardSvg);
       cardInstanceRef.current = cardInstance;
 
@@ -125,10 +140,31 @@ const FamilyTreeViewer = ({ tree, onNodeClick }) => {
         img_y: 5,
       });
       cardInstance.setCardDisplay((d) => {
-        const displayData = d.data.data || d.data;
+        const displayData = d.data;
         return `${displayData["first name"] || ""} ${
           displayData["last name"] || ""
-        }`;
+        }`.trim();
+      });
+
+      cardInstance.setOnCardClick((e, d) => {
+        console.log("Card clicked, raw data:", d);
+        if (d && d.data && !d.data.added) {
+          const nodeId = d.id || (d.data && d.data.id);
+          console.log("Card clicked, ID:", nodeId);
+          if (onNodeClick && nodeId) {
+            const node = transformedTree.find((n) => n.id === nodeId);
+            if (node) {
+              console.log("Found node in transformedTree:", node);
+              onNodeClick(node);
+            } else {
+              console.warn("Node not found in transformedTree for ID:", nodeId);
+            }
+          }
+        } else {
+          console.log("Clicked placeholder node, ignoring:", d);
+        }
+        chartInstance.store.updateMainId(d.id);
+        chartInstance.store.updateTree({});
       });
 
       chartInstance
@@ -136,106 +172,44 @@ const FamilyTreeViewer = ({ tree, onNodeClick }) => {
         .setCardYSpacing(150)
         .setOrientationHorizontal()
         .setSingleParentEmptyCard(false)
-        .setTransitionTime(0); // Disable animations for immediate rendering
+        .setTransitionTime(0);
 
+      console.log("Rendering tree with data:", transformedTree);
       try {
-        const treeResult = chartInstance.updateTree({ initial: true });
-        console.log("Tree result from updateTree:", treeResult);
+        chartInstance.updateTree({ initial: true });
       } catch (error) {
         console.error("Error during initial updateTree:", error);
       }
-      console.log(
-        "store.state.tree after updateTree:",
-        chartInstance.store.state.tree
-      );
-
-      chartInstance.updateTree({ initial: false });
 
       setTimeout(() => {
+        const svg = d3.select(currentContainer).select("svg.main_svg");
+        if (svg.empty()) {
+          console.error("SVG not found after initial render");
+          return;
+        }
+
+        svg
+          .selectAll("path.link")
+          .style("stroke", "black")
+          .style("stroke-width", 2)
+          .style("opacity", 1)
+          .style("display", "block");
+
+        const cardElements = svg.selectAll("g.card");
+        console.log("Number of card elements (g.card):", cardElements.size());
+
+        cardElements.each(function (d) {
+          const element = d3.select(this);
+          element.style("pointer-events", "all");
+          element.selectAll("*").style("pointer-events", "all");
+          console.log("Card element:", element.node(), "Data:", d);
+          console.log("Card pointer-events:", element.style("pointer-events"));
+        });
+
         try {
           chartInstance.updateTree({ initial: false });
-          console.log("Tree re-rendered");
-          console.log("store.state.tree:", chartInstance.store.state.tree);
-
-          const svg = d3.select(currentContainer).select("svg.main_svg");
-          console.log("SVG element:", svg.node());
-
-          const linksView = svg.select(".links_view");
-          console.log("Links view group:", linksView.node());
-
-          svg
-            .selectAll("path.link")
-            .style("stroke", "black")
-            .style("stroke-width", 2)
-            .style("opacity", 1)
-            .style("display", "block");
-
-          const lineElements = svg.selectAll("path.link");
-          console.log("Number of line elements:", lineElements.size());
-          lineElements.each(function (d) {
-            const element = d3.select(this);
-            console.log("Line element:", element.node());
-            console.log("Line data:", d);
-            console.log("Line path (d attribute):", element.attr("d"));
-            console.log("Line style:", element.attr("style"));
-          });
-
-          console.log("Tree data relationships:");
-          chartInstance.store.state.tree.data.forEach((node) => {
-            console.log(`Node ${node.data.id}:`, node.data.rels);
-            console.log(
-              `Node ${node.data.id} position: x=${node.x}, y=${node.y}`
-            );
-          });
-
-          svg
-            .selectAll("g, path")
-            .filter((d) => !(d && d.data))
-            .style("pointer-events", "none");
-
-          const cardElements = svg.selectAll("g").filter((d) => d && d.data);
-          console.log(
-            "Number of potential card elements (g):",
-            cardElements.size()
-          );
-
-          cardElements.each(function (d) {
-            const element = d3.select(this);
-            console.log("Card element:", element.node(), "Data:", d);
-            console.log("Card classes:", element.attr("class"));
-            console.log(
-              "Card pointer-events:",
-              element.style("pointer-events")
-            );
-            element.style("opacity", 1);
-          });
-
-          cardElements.each(function (d) {
-            d3.select(this)
-              .style("pointer-events", "all")
-              .on("click", (event) => {
-                console.log("Click event triggered for card with ID:", d.id);
-                console.log("Event details:", event);
-                console.log("Card data:", d);
-                event.stopPropagation();
-                if (d && d.id) {
-                  const node = transformedTree.find((n) => n.id === d.id);
-                  if (node) {
-                    console.log("Found node in transformedTree:", node);
-                    onNodeClick(node);
-                  } else {
-                    console.error(
-                      "Node not found in transformedTree for ID:",
-                      d.id
-                    );
-                  }
-                } else {
-                  console.error("Invalid card data on click:", d);
-                }
-              });
-          });
         } catch (error) {
-          console.error("Error during re-render updateTree:", error);
+          console.error("Error during post-render updateTree:", error);
         }
       }, 1000);
 
@@ -243,6 +217,7 @@ const FamilyTreeViewer = ({ tree, onNodeClick }) => {
         if (chartInstance && typeof chartInstance.destroy === "function") {
           chartInstance.destroy();
         }
+        d3.select(currentContainer).selectAll("*").remove();
       };
     } catch (error) {
       console.error("Error rendering FamilyChart:", error);
@@ -256,7 +231,7 @@ const FamilyTreeViewer = ({ tree, onNodeClick }) => {
   return (
     <div
       className="family-tree-container"
-      style={{ width: "100%", minHeight: "100vh" }}
+      style={{ width: "100%", minHeight: "100vh", position: "relative" }}
     >
       <div ref={containerRef}></div>
     </div>
