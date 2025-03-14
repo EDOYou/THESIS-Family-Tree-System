@@ -70,29 +70,12 @@ const FamilyTreeViewer = ({ tree, onNodeClick }) => {
     };
   });
 
-  console.log(
-    "Transformed tree with IDs:",
-    transformedTree.map((n) => n.id)
-  );
-  console.log(
-    "Transformed tree relationships:",
-    transformedTree.map((node) => ({ id: node.id, rels: node.rels }))
-  );
   const uniqueIds = new Set(transformedTree.map((n) => n.id));
-  console.log(
-    "Unique IDs count:",
-    uniqueIds.size,
-    "vs Total nodes:",
-    transformedTree.length
-  );
   if (uniqueIds.size !== transformedTree.length) {
     console.warn("Duplicate IDs detected in transformedTree!");
   }
 
   useEffect(() => {
-    console.log("Original tree prop:", tree);
-    console.log("Transformed tree:", transformedTree);
-
     if (!containerRef.current || !transformedTree.length) return;
 
     const currentContainer = containerRef.current;
@@ -102,9 +85,8 @@ const FamilyTreeViewer = ({ tree, onNodeClick }) => {
     try {
       d3.select(currentContainer).selectAll("*").remove();
 
-      const containerStyle = window.getComputedStyle(currentContainer);
-      const width = parseInt(containerStyle.width, 10) || 1200;
-      const height = parseInt(containerStyle.height, 10) || 800;
+      const width = 1200;
+      const height = 800;
       currentContainer.style.width = `${width}px`;
       currentContainer.style.height = `${height}px`;
 
@@ -115,17 +97,18 @@ const FamilyTreeViewer = ({ tree, onNodeClick }) => {
       if (svg.empty()) {
         throw new Error("SVG not created by createChart");
       }
-      console.log("SVG created:", svg.node());
+
+      svg.attr("width", width).attr("height", height);
 
       if (!svg.node().__zoomObj) {
-        console.warn(
-          "Zoom behavior not initialized by createChart, attempting manual setup"
-        );
+        console.log("Initializing zoom behavior manually");
         const zoom = d3.zoom().on("zoom", (e) => {
           svg.select(".view").attr("transform", e.transform);
         });
         svg.call(zoom);
         svg.node().__zoomObj = zoom;
+      } else {
+        console.log("Zoom behavior already initialized by createChart");
       }
 
       cardInstance = chartInstance.setCard(f3.CardSvg);
@@ -170,11 +153,10 @@ const FamilyTreeViewer = ({ tree, onNodeClick }) => {
       chartInstance
         .setCardXSpacing(250)
         .setCardYSpacing(150)
-        .setOrientationHorizontal()
+        .setOrientationVertical()
         .setSingleParentEmptyCard(false)
         .setTransitionTime(0);
 
-      console.log("Rendering tree with data:", transformedTree);
       try {
         chartInstance.updateTree({ initial: true });
       } catch (error) {
@@ -202,8 +184,6 @@ const FamilyTreeViewer = ({ tree, onNodeClick }) => {
           const element = d3.select(this);
           element.style("pointer-events", "all");
           element.selectAll("*").style("pointer-events", "all");
-          console.log("Card element:", element.node(), "Data:", d);
-          console.log("Card pointer-events:", element.style("pointer-events"));
         });
 
         try {

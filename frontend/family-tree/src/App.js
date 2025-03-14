@@ -16,13 +16,13 @@ const App = () => {
   const [tree, setTree] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [error, setError] = useState(null);
-  const debug = true;
+  const debug = false;
 
   useEffect(() => {
     const loadTree = async () => {
       try {
         const persons = await fetchFamilyTree();
-        console.log("Fetched persons:", persons, "Type:", typeof persons);
+        //console.log("Fetched persons:", persons, "Type:", typeof persons);
         const treeData = buildTree(persons, debug) || [];
         setTree(treeData);
         setSelectedNode(treeData && treeData.length > 0 ? treeData[0] : null);
@@ -62,7 +62,7 @@ const App = () => {
       }
     };
     loadTree();
-  }, [refreshKey, debug]);
+  }, [refreshKey, debug]); // eslint-disable-next-line react-hooks/exhaustive-deps
 
   const handleNodeClick = (node) => {
     logDebug("Clicked node:", node, debug);
