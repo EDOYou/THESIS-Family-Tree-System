@@ -1,94 +1,193 @@
-import React from "react";
-
-const Node = ({ node, onNodeClick }) => {
-  const nodeStyle = {
-    display: "inline-block",
-    padding: "10px",
-    border: "1px solid #ccc",
-    borderRadius: "5px",
-    backgroundColor: node.gender === "MALE" ? "#ADD8E6" : "#FFB6C1",
-    cursor: "pointer",
-    margin: "5px",
-  };
-
-  const spouseStyle = {
-    marginLeft: "10px",
-    fontSize: "12px",
-    color: "gray",
-  };
-
-  const spouseName =
-    node.spouses
-      ?.map((spouseId) => node._treeData?.find((n) => n.id === spouseId)?.name)
-      .filter(Boolean)
-      .join(", ") || null;
-
-  return (
-    <div style={nodeStyle} onClick={() => onNodeClick(node)}>
-      {node.name}
-      {spouseName && <span style={spouseStyle}>(Spouse: {spouseName})</span>}
-    </div>
-  );
-};
+import React, { useEffect, useRef } from "react";
+import f3 from "family-chart/dist/family-chart.esm.js";
+import * as d3 from "d3";
+import "./FamilyTreeViewer.css";
 
 const FamilyTreeViewer = ({ tree, onNodeClick }) => {
-  const buildTreeStructure = (flatTree) => {
-    const nodeMap = new Map();
-    flatTree.forEach((node) => nodeMap.set(node.id, { ...node, children: [] }));
+  const containerRef = useRef(null);
+  const chartInstanceRef = useRef(null);
+  const cardInstanceRef = useRef(null);
 
-    flatTree.forEach((node) => {
-      if (node.parents && node.parents.length > 0) {
-        node.parents.forEach((parentId) => {
-          const parent = nodeMap.get(parentId);
-          if (parent) parent.children.push(nodeMap.get(node.id));
-        });
-      }
-    });
-
-    return Array.from(nodeMap.values()).filter(
-      (node) => node.parents.length === 0
+  const transformedTree = tree.map((node) => {
+    const id =
+      node.id ||
+      `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const allIds = new Set(
+      tree.map(
+        (n) =>
+          n.id ||
+          `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      )
     );
-  };
+    const rels = {
+      parents: (node.parents || []).filter((id) => allIds.has(id)),
+      spouses: (node.spouses || []).filter((id) => allIds.has(id)),
+      children: (node.children || []).filter((id) => allIds.has(id)),
+    };
 
-  const sanitizedTree = tree.map((node) => ({
-    ...node,
-    parents: Array.isArray(node.parents) ? node.parents : [],
-    spouses: Array.isArray(node.spouses) ? node.spouses : [],
-    children: Array.isArray(node.children) ? node.children : [],
-    _treeData: tree,
-  }));
+    const parents = rels.parents || [];
+    const father = parents.length > 0 ? parents[0] : null;
+    const mother = parents.length > 1 ? parents[1] : null;
 
-  const hierarchicalTree = buildTreeStructure(sanitizedTree);
-
-  const renderNode = (node) => (
-    <div key={node.id} style={{ marginBottom: "20px", textAlign: "center" }}>
-      <Node node={node} onNodeClick={onNodeClick} />
-      {node.children && node.children.length > 0 && (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            marginTop: "10px",
-            flexWrap: "wrap",
-          }}
-        >
-          {node.children.map((child) => (
-            <div key={child.id} style={{ margin: "0 10px" }}>
-              {renderNode(child)}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    return {
+      id,
+      data: {
+        gender: (node.gender ?? "unknown").toLowerCase(),
+        ...(node.name && { "first name": node.name, "last name": "" }),
+        ...node.data,
+      },
+      rels: {
+        father,
+        mother,
+        spouses: rels.spouses,
+        children: rels.children,
+      },
+    };
+  });
+  console.log(
+    "Transformed tree with IDs:",
+    transformedTree.map((n) => n.id)
   );
+  const uniqueIds = new Set(transformedTree.map((n) => n.id));
+  console.log(
+    "Unique IDs count:",
+    uniqueIds.size,
+    "vs Total nodes:",
+    transformedTree.length
+  );
+  if (uniqueIds.size !== transformedTree.length) {
+    console.warn("Duplicate IDs detected in transformedTree!");
+  }
 
-  if (!hierarchicalTree || hierarchicalTree.length === 0) {
+  useEffect(() => {
+    console.log("Original tree prop:", tree);
+    console.log("Transformed tree:", transformedTree);
+
+    if (!containerRef.current || !transformedTree.length) return;
+
+    const currentContainer = containerRef.current;
+    let chartInstance = null;
+    let cardInstance = null;
+
+    try {
+      const svg = d3.select(currentContainer).select("svg.main_svg");
+      if (svg.empty()) {
+        chartInstance = f3.createChart(currentContainer, transformedTree);
+      } else {
+        svg.remove();
+        chartInstance = f3.createChart(currentContainer, transformedTree);
+      }
+      chartInstanceRef.current = chartInstance;
+      cardInstance = chartInstance.setCard(f3.CardSvg);
+      cardInstanceRef.current = cardInstance;
+      cardInstance
+        .setCardDim({ w: 220, h: 70, img_w: 60, img_h: 60, img_x: 5, img_y: 5 })
+        .setCardDisplay(
+          (d) => `${d.data["first name"]} ${d.data["last name"]}`
+        );
+
+      chartInstance
+        .setCardXSpacing(250)
+        .setCardYSpacing(150)
+        .setOrientationHorizontal()
+        .setSingleParentEmptyCard(false);
+
+      const treeResult = chartInstance.updateTree({ initial: true });
+      console.log("Tree result from updateTree:", treeResult);
+      console.log(
+        "store.state.tree after updateTree:",
+        chartInstance.store.state.tree
+      );
+
+      if (
+        chartInstance.store.state.tree &&
+        chartInstance.store.state.tree.data
+      ) {
+        chartInstance.store.state.cards =
+          chartInstance.store.state.tree.data.filter(
+            (card) => card && card.data && card.id
+          );
+        console.log(
+          "store.state.cards after manual assignment:",
+          chartInstance.store.state.cards
+        );
+      } else {
+        console.error("store.state.tree.data is undefined after updateTree");
+      }
+
+      if (chartInstance.store.state.cards) {
+        chartInstance.store.state.cards.forEach((card, index) => {
+          console.log(
+            `Card ${index} position: x=${card.x}, y=${card.y}, data=`,
+            card.data
+          );
+          if (typeof card.x !== "number" || isNaN(card.x)) card.x = 0;
+          if (typeof card.y !== "number" || isNaN(card.y)) card.y = 0;
+        });
+      } else {
+        console.error("store.state.cards is undefined after manual assignment");
+      }
+
+      const handleClick = (event) => {
+        const nodeElement = event.target.closest(".card");
+        if (nodeElement) {
+          const nodeId = nodeElement.dataset.id;
+          const node = transformedTree.find((n) => n.id === nodeId);
+          if (node) onNodeClick(node);
+        }
+      };
+      currentContainer.addEventListener("click", handleClick);
+
+      setTimeout(() => {
+        const svg = d3.select(currentContainer).select("svg.main_svg");
+        const cardElements = svg.selectAll(".card").filter((d) => d && d.data);
+        console.log("Number of valid .card elements:", cardElements.size());
+        cardElements.each(function (d) {
+          const nodeData = d.data;
+          const spouses = nodeData.rels.spouses || [];
+          if (spouses.length > 0) {
+            const spouseNames = spouses
+              .map(
+                (spouseId) =>
+                  transformedTree.find((n) => n.id === spouseId)?.data[
+                    "first name"
+                  ]
+              )
+              .filter(Boolean)
+              .join(", ");
+            d3.select(this)
+              .append("text")
+              .attr("class", "spouse-label")
+              .attr("dy", "2em")
+              .attr("text-anchor", "middle")
+              .style("font-size", "12px")
+              .style("fill", "gray")
+              .text(`(Spouse: ${spouseNames})`);
+          }
+        });
+      }, 0);
+
+      return () => {
+        if (chartInstance && typeof chartInstance.destroy === "function") {
+          chartInstance.destroy();
+        }
+        currentContainer.removeEventListener("click", handleClick);
+      };
+    } catch (error) {
+      console.error("Error rendering FamilyChart:", error);
+    }
+  }, [transformedTree, onNodeClick]);
+
+  if (!transformedTree || transformedTree.length === 0) {
     return <div>No family tree data available.</div>;
   }
 
   return (
-    <div style={{ width: "100%", height: "600px", overflow: "auto" }}>
-      {hierarchicalTree.map((node) => renderNode(node))}
+    <div
+      className="family-tree-container"
+      style={{ width: "100%", minHeight: "100vh" }}
+    >
+      <div ref={containerRef}></div>
     </div>
   );
 };

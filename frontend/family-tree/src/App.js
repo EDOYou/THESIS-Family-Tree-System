@@ -13,7 +13,7 @@ import { DEFAULT_ME_NODE } from "./constants";
 
 const App = () => {
   const [selectedNode, setSelectedNode] = useState(null);
-  const [tree, setTree] = useState(null);
+  const [tree, setTree] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [error, setError] = useState(null);
   const debug = true;
@@ -23,7 +23,7 @@ const App = () => {
       try {
         const persons = await fetchFamilyTree();
         console.log("Fetched persons:", persons, "Type:", typeof persons);
-        const treeData = buildTree(persons, debug);
+        const treeData = buildTree(persons, debug) || [];
         setTree(treeData);
         setSelectedNode(treeData && treeData.length > 0 ? treeData[0] : null);
       } catch (error) {
@@ -42,7 +42,7 @@ const App = () => {
               "Type:",
               typeof persons
             );
-            const treeData = buildTree(persons, debug);
+            const treeData = buildTree(persons, debug) || [];
             setTree(treeData);
             setSelectedNode(
               treeData && treeData.length > 0 ? treeData[0] : null
@@ -56,19 +56,23 @@ const App = () => {
             setError(
               'Failed to save default "Me" node. Please edit and save manually.'
             );
+            setTree([]);
           }
         }
       }
     };
     loadTree();
-  }, [refreshKey]);
+  }, [refreshKey, debug]);
 
   const handleNodeClick = (node) => {
     logDebug("Clicked node:", node, debug);
-
-    const fullNode = tree.find((n) => n.id === node.id);
-    setSelectedNode(fullNode);
-    setError(null);
+    if (node && node.id) {
+      const fullNode = tree.find((n) => n.id === node.id);
+      setSelectedNode(fullNode);
+      setError(null);
+    } else {
+      console.error("Invalid node clicked:", node);
+    }
   };
 
   const handleRefreshTree = () => {
@@ -76,7 +80,7 @@ const App = () => {
   };
 
   const handleAddMember = (type) => {
-    if (type === "child" && !selectedNode.spouses?.length) {
+    if (type === "child" && !selectedNode?.spouses?.length) {
       setError("Cannot add a child without a spouse.");
       return;
     }
@@ -88,7 +92,9 @@ const App = () => {
       {error && (
         <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>
       )}
-      {tree && <FamilyTreeViewer tree={tree} onNodeClick={handleNodeClick} />}
+      {tree && tree.length > 0 && (
+        <FamilyTreeViewer tree={tree} onNodeClick={handleNodeClick} />
+      )}
       {selectedNode && (
         <NodeForm
           selectedNode={selectedNode}
