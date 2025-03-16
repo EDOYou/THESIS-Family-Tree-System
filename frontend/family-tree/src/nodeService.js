@@ -30,24 +30,33 @@ export const fetchFamilyTree = async () => {
     return [];
   } catch (error) {
     console.error("Error fetching family tree:", error);
-    throw error;
+    throw new Error("Failed to fetch family tree: " + error.message);
   }
 };
 
 export const createPerson = async (personData) => {
-  console.log("Creating person:", personData);
-  const response = await axios.post(API_URL, personData);
-  return response.data;
+  try {
+    console.log("Creating person:", personData);
+    const response = await axios.post(API_URL, personData);
+    return response.data;
+  } catch (error) {
+    console.error("Error creating person:", error);
+    throw new Error("Failed to create person: " + error.message);
+  }
 };
 
-export const saveOrUpdateNode = async (nodeData, setTree, personId) => {
-  if (!personId) {
-    console.error("personId is undefined in saveOrUpdateNode:", nodeData);
-    throw new Error("Invalid person ID");
+export const saveOrUpdateNode = async (nodeData, personId) => {
+  try {
+    if (!personId) {
+      throw new Error("Invalid person ID");
+    }
+    console.log("Saving node:", nodeData);
+    const response = await axios.put(`${API_URL}/${personId}`, nodeData);
+    return response.data;
+  } catch (error) {
+    console.error("Error saving node:", error);
+    throw new Error("Failed to save node: " + error.message);
   }
-  console.log("Saving node:", nodeData);
-  const response = await axios.put(`${API_URL}/${personId}`, nodeData);
-  return response.data;
 };
 
 export const addChild = async (personId, childData) => {
@@ -59,17 +68,32 @@ export const addChild = async (personId, childData) => {
     return response.data;
   } catch (error) {
     console.error("Error adding child:", error);
-    throw error;
+    throw new Error("Failed to add child: " + error.message);
   }
 };
 
 export const addSpouse = async (personId, spouseData) => {
-  console.log("Inside addSpouse:", personId, spouseData);
-  const response = await axios.post(
-    `${API_URL}/${personId}/spouse`,
-    spouseData
-  );
-  return response.data;
+  try {
+    console.log("Inside addSpouse:", personId, spouseData);
+    const response = await axios.post(
+      `${API_URL}/${personId}/spouse`,
+      spouseData
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error adding spouse:", error);
+    throw new Error("Failed to add spouse: " + error.message);
+  }
+};
+
+export const deletePerson = async (personId) => {
+  try {
+    const response = await axios.delete(`${API_URL}/${personId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting person:", error);
+    throw new Error("Failed to delete person: " + error.message);
+  }
 };
 
 export const MY_ID = 1;

@@ -1,20 +1,12 @@
 import React, { useState, useEffect } from "react";
 import FamilyTreeViewer from "./FamilyTreeViewer";
-import NodeForm from "./nodeForm";
-import { buildTree, logDebug } from "./treeUtils";
-import {
-  fetchFamilyTree,
-  createPerson,
-  saveOrUpdateNode,
-  addChild,
-  addSpouse,
-} from "./nodeService";
+import { buildTree } from "./treeUtils";
+import { fetchFamilyTree, createPerson } from "./nodeService";
 import { DEFAULT_ME_NODE } from "./constants";
 
 const App = () => {
-  const [selectedNode, setSelectedNode] = useState(null);
   const [tree, setTree] = useState([]);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshKey] = useState(0);
   const [error, setError] = useState(null);
   const debug = false;
 
@@ -22,10 +14,8 @@ const App = () => {
     const loadTree = async () => {
       try {
         const persons = await fetchFamilyTree();
-        //console.log("Fetched persons:", persons, "Type:", typeof persons);
         const treeData = buildTree(persons, debug) || [];
-        setTree(treeData);
-        setSelectedNode(treeData && treeData.length > 0 ? treeData[0] : null);
+        setTree(treeData.length > 0 ? treeData : []);
       } catch (error) {
         console.error("Error fetching family tree:", error);
         setError(
@@ -36,17 +26,8 @@ const App = () => {
           try {
             const savedNode = await createPerson(DEFAULT_ME_NODE);
             const persons = await fetchFamilyTree();
-            console.log(
-              "Fetched persons after creating Me:",
-              persons,
-              "Type:",
-              typeof persons
-            );
             const treeData = buildTree(persons, debug) || [];
-            setTree(treeData);
-            setSelectedNode(
-              treeData && treeData.length > 0 ? treeData[0] : null
-            );
+            setTree(treeData.length > 0 ? treeData : []);
             console.log(
               'Default "Me" node saved to backend with ID:',
               savedNode.id
@@ -62,29 +43,13 @@ const App = () => {
       }
     };
     loadTree();
-  }, [refreshKey, debug]); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshKey, debug]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleNodeClick = (node) => {
-    logDebug("Clicked node:", node, debug);
-    if (node && node.id) {
-      const fullNode = tree.find((n) => n.id === node.id);
-      setSelectedNode(fullNode);
-      setError(null);
-    } else {
-      console.error("Invalid node clicked:", node);
+  const handleTreeUpdate = (updatedTree) => {
+    if (JSON.stringify(tree) !== JSON.stringify(updatedTree)) {
+      setTree(updatedTree);
     }
-  };
-
-  const handleRefreshTree = () => {
-    setRefreshKey((prev) => prev + 1);
-  };
-
-  const handleAddMember = (type) => {
-    if (type === "child" && !selectedNode?.spouses?.length) {
-      setError("Cannot add a child without a spouse.");
-      return;
-    }
-    setSelectedNode({ ...selectedNode, addingMemberType: type });
+    setError(null);
   };
 
   return (
@@ -92,24 +57,23 @@ const App = () => {
       {error && (
         <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>
       )}
-      {tree && tree.length > 0 && (
-        <FamilyTreeViewer tree={tree} onNodeClick={handleNodeClick} />
-      )}
-      {selectedNode && (
-        <NodeForm
-          selectedNode={selectedNode}
-          setSelectedNode={setSelectedNode}
-          onSave={saveOrUpdateNode}
-          onClose={() => setSelectedNode(null)}
-          onRefresh={handleRefreshTree}
-          onAddMember={handleAddMember}
-          error={error}
-          setError={setError}
-          setTree={setTree}
-          addChild={addChild}
-          addSpouse={addSpouse}
-        />
-      )}
+      <div
+        id="FamilyChart"
+        className="f3"
+        style={{
+          width: "100%",
+          height: "900px",
+          margin: "auto",
+          backgroundColor: "rgb(33, 33, 33)",
+          color: "#fff",
+        }}
+      >
+        {tree.length > 0 ? (
+          <FamilyTreeViewer tree={tree} onTreeUpdate={handleTreeUpdate} />
+        ) : (
+          <div>Loading family tree...</div>
+        )}
+      </div>
     </div>
   );
 };
