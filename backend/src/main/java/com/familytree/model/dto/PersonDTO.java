@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 @Setter
 @Getter
 public class PersonDTO {
-    private Long id;
+    private String id;
     private String name;
     private Integer age;
     private String occupation;
@@ -21,8 +21,8 @@ public class PersonDTO {
     private String deathPlace;
     private Boolean hasSubTree;
     private String gender;
-    private Long spouseId;
-    private Long parentId;
+    private String spouseId;
+    private String parentId;
     private List<PersonDTO> children = new ArrayList<>();
 
     public PersonDTO() {}

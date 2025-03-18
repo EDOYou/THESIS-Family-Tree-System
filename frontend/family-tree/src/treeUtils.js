@@ -104,6 +104,86 @@ export const buildTree = (persons, debug = false) => {
   return flatTree.length > 0 ? flatTree : null;
 };
 
+export const transformTree = (tree) => {
+  try {
+    const transformed = tree.map((node) => {
+      if (!node.id) {
+        throw new Error(
+          `Node is missing an ID: ${JSON.stringify(
+            node
+          )}. All database nodes must have a valid ID.`
+        );
+      }
+
+      const id = String(node.id);
+      const allIds = new Set(tree.map((n) => String(n.id)));
+      const getValidIds = (ids) =>
+        (ids || []).filter((id) => allIds.has(String(id))).map(String);
+
+      const rels = {
+        parents: getValidIds(node.parents),
+        spouses: getValidIds(node.spouses),
+        children: getValidIds(node.children),
+      };
+
+      rels.spouses = rels.spouses.filter(
+        (spouseId) => !rels.children.includes(spouseId)
+      );
+      rels.children = rels.children.filter(
+        (childId) => !rels.spouses.includes(childId)
+      );
+
+      let father, mother;
+      if (rels.parents.length > 0) {
+        rels.parents.forEach((parentId) => {
+          const parent = tree.find((n) => String(n.id) === parentId);
+          if (parent?.gender === "MALE") father = parentId;
+          else if (parent?.gender === "FEMALE") mother = parentId;
+        });
+      }
+
+      const genderValue = node.gender ? node.gender.toUpperCase() : "unknown";
+      const normalizedGender =
+        genderValue === "MALE" || genderValue === "M"
+          ? "M"
+          : genderValue === "FEMALE" || genderValue === "F"
+          ? "F"
+          : "unknown";
+
+      return {
+        id,
+        data: {
+          gender: normalizedGender,
+          name: node.name || "",
+          occupation: node.occupation || "",
+          age: node.age || "",
+          birthDate: node.birthDate || "",
+          deathDate: node.deathDate || "",
+          birthPlace: node.birthPlace || "",
+          deathPlace: node.deathPlace || "",
+          hasSubTree: node.hasSubTree || false,
+        },
+        rels: {
+          father,
+          mother,
+          spouses: rels.spouses,
+          children: rels.children,
+        },
+      };
+    });
+
+    const uniqueIds = new Set(transformed.map((n) => n.id));
+    if (uniqueIds.size !== transformed.length) {
+      console.warn("Duplicate IDs detected in transformedTree!");
+    }
+
+    return transformed;
+  } catch (error) {
+    console.error("Error transforming tree:", error);
+    throw error;
+  }
+};
+
 export const logDebug = (message, data, debug = false) => {
   if (debug) {
     console.log(message, data);

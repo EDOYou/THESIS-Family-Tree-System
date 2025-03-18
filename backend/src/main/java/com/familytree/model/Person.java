@@ -17,12 +17,12 @@ import java.util.List;
 @Table(name = "persons")
 @Setter
 @Getter
-@JsonIgnoreProperties(ignoreUnknown = true) // Ignore unknown properties during deserialization
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Person {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(length = 36)
+    private String id;
 
     @NotNull
     @Size(min = 2, max = 30)
@@ -59,7 +59,8 @@ public class Person {
 
     public Person() {}
 
-    public Person(String name, Integer age, Gender gender) {
+    public Person(String id, String name, Integer age, Gender gender) {
+        this.id = id;
         this.name = name;
         this.age = age;
         this.gender = gender;

@@ -38,7 +38,7 @@ export const createPerson = async (personData) => {
   try {
     console.log("Creating person:", personData);
     const response = await axios.post(API_URL, personData);
-    return response.data;
+    return response.data; // Expecting { id: String (UUID), ... }
   } catch (error) {
     console.error("Error creating person:", error);
     throw new Error("Failed to create person: " + error.message);
@@ -47,8 +47,8 @@ export const createPerson = async (personData) => {
 
 export const saveOrUpdateNode = async (nodeData, personId) => {
   try {
-    if (!personId) {
-      throw new Error("Invalid person ID");
+    if (!personId || typeof personId !== "string") {
+      throw new Error("Invalid person ID: " + personId);
     }
     console.log("Saving node:", nodeData);
     const response = await axios.put(`${API_URL}/${personId}`, nodeData);

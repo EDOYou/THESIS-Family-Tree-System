@@ -6,7 +6,6 @@ import React, {
   useCallback,
 } from "react";
 import PropTypes from "prop-types";
-import f3 from "family-chart/dist/family-chart.esm.js";
 import * as d3 from "d3";
 import "./FamilyTreeViewer.css";
 import {
@@ -16,6 +15,8 @@ import {
   addSpouse,
   deletePerson,
 } from "./nodeService";
+import { transformTree } from "./treeUtils";
+import { initializeChart, configureCard } from "./chartUtils";
 
 const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
   const containerRef = useRef(null);
@@ -25,84 +26,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
   const originalTreeRef = useRef([]);
   const [error, setError] = useState(null);
 
-  const transformedTree = useMemo(() => {
-    return tree.map((node) => {
-      if (!node.id) {
-        throw new Error(
-          `Node is missing an ID: ${JSON.stringify(
-            node
-          )}. All database nodes must have a valid ID.`
-        );
-      }
-
-      const id = String(node.id);
-      const allIds = new Set(tree.map((n) => String(n.id)));
-      const rels = {
-        parents: (node.parents || [])
-          .filter((id) => allIds.has(String(id)))
-          .map(String),
-        spouses: (node.spouses || [])
-          .filter((id) => allIds.has(String(id)))
-          .map(String),
-        children: (node.children || [])
-          .filter((id) => allIds.has(String(id)))
-          .map(String),
-      };
-
-      rels.spouses = rels.spouses.filter(
-        (spouseId) => !rels.children.includes(spouseId)
-      );
-      rels.children = rels.children.filter(
-        (childId) => !rels.spouses.includes(childId)
-      );
-
-      let father = undefined;
-      let mother = undefined;
-      if (rels.parents && rels.parents.length > 0) {
-        rels.parents.forEach((parentId) => {
-          const parent = tree.find((n) => String(n.id) === parentId);
-          if (parent) {
-            if (parent.gender === "MALE") father = parentId;
-            else if (parent.gender === "FEMALE") mother = parentId;
-          }
-        });
-      }
-
-      const genderValue = node.gender ? node.gender.toUpperCase() : "unknown";
-      const normalizedGender =
-        genderValue === "MALE" || genderValue === "M"
-          ? "M"
-          : genderValue === "FEMALE" || genderValue === "F"
-          ? "F"
-          : "unknown";
-
-      return {
-        id,
-        data: {
-          gender: normalizedGender,
-          name: node.name || "",
-          occupation: node.occupation || "",
-          age: node.age || "",
-          birthDate: node.birthDate || "",
-          deathDate: node.deathDate || "",
-          birthPlace: node.birthPlace || "",
-          deathPlace: node.deathPlace || "",
-          hasSubTree: node.hasSubTree || false,
-        },
-        rels: {
-          father,
-          mother,
-          spouses: rels.spouses,
-          children: rels.children,
-        },
-      };
-    });
-  }, [tree]);
-
-  const uniqueIds = new Set(transformedTree.map((n) => n.id));
-  if (uniqueIds.size !== transformedTree.length) {
-    console.warn("Duplicate IDs detected in transformedTree!");
-  }
+  const transformedTree = useMemo(() => transformTree(tree), [tree]);
 
   const memoizedOnTreeUpdate = useCallback(
     (updatedTree) => {
@@ -114,82 +38,24 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
   useEffect(() => {
     if (!transformedTree.length) return;
 
-    const currentContainer = document.getElementById("FamilyChart");
+    const currentContainer =
+      document.getElementById("FamilyChart") || containerRef.current;
     if (!currentContainer) {
       console.error("FamilyChart container not found");
       return;
     }
 
-    let chartInstance = chartInstanceRef.current;
-    let cardInstance = cardInstanceRef.current;
+    let chartInstance, cardInstance;
 
     try {
-      d3.select(currentContainer).selectAll("*").remove();
+      ({ chartInstance, cardInstance } = initializeChart(
+        currentContainer,
+        transformedTree,
+        chartInstanceRef,
+        cardInstanceRef
+      ));
 
-      const width = 1200;
-      const height = 900;
-      currentContainer.style.width = `${width}px`;
-      currentContainer.style.height = `${height}px`;
-
-      chartInstance = f3.createChart(currentContainer, transformedTree);
-      chartInstanceRef.current = chartInstance;
-
-      const svg = d3.select(currentContainer).select("svg.main_svg");
-      if (svg.empty()) {
-        throw new Error("SVG not created by createChart");
-      }
-
-      svg.attr("width", width).attr("height", height);
-
-      if (!svg.node().__zoomObj) {
-        const zoom = d3.zoom().on("zoom", (e) => {
-          svg.select(".view").attr("transform", e.transform);
-        });
-        svg.call(zoom);
-        svg.node().__zoomObj = zoom;
-      }
-
-      cardInstance = chartInstance.setCard(f3.CardSvg);
-      cardInstanceRef.current = cardInstance;
-
-      cardInstance.setCardDisplay((d) => {
-        const name =
-          d.data && d.data.data && d.data.data.name
-            ? d.data.data.name
-            : "Unnamed";
-        return name;
-      });
-
-      cardInstance.onCardUpdate = function (d) {
-        const cardNode = d3.select(this);
-        const name =
-          d.data && d.data.data && d.data.data.name
-            ? d.data.data.name
-            : "Unnamed";
-
-        let textElement = cardNode.select(".card-inner text");
-        if (textElement.empty()) {
-          console.warn(
-            "No text element found inside .card-inner, creating one"
-          );
-          textElement = cardNode
-            .select(".card-inner")
-            .append("text")
-            .attr("x", 10)
-            .attr("y", 20)
-            .attr("fill", "#fff");
-        }
-        textElement.text(name);
-      };
-
-      cardInstance.setCardDim({
-        w: 220,
-        h: 70,
-        img_w: 60,
-        img_h: 60,
-        img_x: 5,
-        img_y: 5,
-      });
+      configureCard(cardInstance);
 
       const editTreeInstance = chartInstance.editTree();
       editTreeInstanceRef.current = editTreeInstance;
@@ -362,6 +228,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
 
       chartInstance.updateTree({ initial: true });
 
+      const svg = d3.select(currentContainer).select("svg.main_svg");
       if (svg.empty()) {
         console.error("SVG not found after initial render");
         return;
@@ -385,14 +252,14 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
 
       return () => {
         if (
-          editTreeInstance &&
-          typeof editTreeInstance.destroy === "function"
+          editTreeInstanceRef.current &&
+          typeof editTreeInstanceRef.current.destroy === "function"
         ) {
           try {
-            if (editTreeInstance.isAddingRelative()) {
-              editTreeInstance.addRelativeInstance.onCancel();
+            if (editTreeInstanceRef.current.isAddingRelative()) {
+              editTreeInstanceRef.current.addRelativeInstance.onCancel();
             }
-            editTreeInstance.destroy();
+            editTreeInstanceRef.current.destroy();
           } catch (error) {
             console.error("Error destroying editTreeInstance:", error);
           }
@@ -405,7 +272,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
     } catch (error) {
       console.error("Error rendering FamilyChart:", error);
       setError("Failed to render the family tree.");
-      throw error;
     }
   }, [transformedTree, memoizedOnTreeUpdate]);
 
@@ -421,7 +287,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
       {error && (
         <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>
       )}
-      <div ref={containerRef}></div>
+      <div ref={containerRef} id="FamilyChart"></div>
     </div>
   );
 };

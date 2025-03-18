@@ -8,7 +8,7 @@ import java.nio.channels.FileChannel;
 import java.util.Optional;
 
 @Repository
-public interface PersonRepository extends JpaRepository<Person, Long> {
+public interface PersonRepository extends JpaRepository<Person, String> {
     Optional<Person> findByName(String name);
     Optional<Person> findFirstByParentIsNull();
 }

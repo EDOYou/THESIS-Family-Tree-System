@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -37,8 +38,8 @@ public class PersonController {
     @PostMapping
     public ResponseEntity<PersonDTO> createPerson(@Valid @RequestBody Person person) {
         System.out.println("Creating person: " + person.getName() + ", ID: " + person.getId());
-        if (person.getId() != null) {
-            person.setId(null);
+        if (person.getId() == null) {
+            person.setId(UUID.randomUUID().toString());
         }
         person.setChildren(new ArrayList<>());
         Person savedPerson = personRepository.save(person);
@@ -46,7 +47,7 @@ public class PersonController {
     }
 
     @PutMapping("/{personId}")
-    public PersonDTO saveOrUpdatePerson(@PathVariable Long personId, @Valid @RequestBody Person person) {
+    public PersonDTO saveOrUpdatePerson(@PathVariable String personId, @Valid @RequestBody Person person) {
         System.out.println("Updating person: " + person.getName() + ", ID: " + person.getId());
         person.setId(personId);
         Person savedPerson = personRepository.save(person);
@@ -54,7 +55,7 @@ public class PersonController {
     }
 
     @PostMapping("/{personId}/child")
-    public ResponseEntity<?> addChild(@PathVariable Long personId, @Valid @RequestBody Person child) {
+    public ResponseEntity<?> addChild(@PathVariable String personId, @Valid @RequestBody Person child) {
         return personRepository.findById(personId)
                 .map(person -> {
                     if (person.getSpouse() == null) {
@@ -63,7 +64,11 @@ public class PersonController {
                     if (personRepository.findByName(child.getName()).isPresent()) {
                         return ResponseEntity.badRequest().body("A person with this name already exists.");
                     }
+                    if (child.getId() == null) {
+                        throw new IllegalArgumentException("ID must be provided for new child");
+                    }
                     child.setParent(person);
+                    child.setChildren(new ArrayList<>());
                     Person savedChild = personRepository.save(child);
                     person.getChildren().add(savedChild);
                     personRepository.save(person);
@@ -73,8 +78,8 @@ public class PersonController {
     }
 
     @PostMapping("/{personId}/spouse")
-    public ResponseEntity<?> addSpouse(@PathVariable Long personId, @Valid @RequestBody Person spouse) {
-        System.out.println("Received spouse: " + spouse.getId() + ", " + spouse.getName() + ", " + spouse.getGender());
+    public ResponseEntity<?> addSpouse(@PathVariable String personId, @Valid @RequestBody Person spouse) {
+        System.out.println("Received spouse: " + spouse.getName() + ", Gender: " + spouse.getGender());
         return personRepository.findById(personId)
                 .map(person -> {
                     if (person.getSpouse() != null) {
@@ -86,14 +91,12 @@ public class PersonController {
                     if (personRepository.findByName(spouse.getName()).isPresent()) {
                         return ResponseEntity.badRequest().body("A person with this name already exists.");
                     }
+                    if (spouse.getId() == null) {
+                        throw new IllegalArgumentException("ID must be provided for new spouse");
+                    }
                     spouse.setSpouse(null);
                     spouse.setChildren(new ArrayList<>());
-                    if (spouse.getId() != null) {
-                        System.out.println("Warning: Spouse ID is not null (" + spouse.getId() + "). Resetting to null for new entity.");
-                        spouse.setId(null);
-                    }
                     Person savedSpouse = personRepository.save(spouse);
-                    System.out.println("Saved spouse ID: " + savedSpouse.getId());
                     person.setSpouse(savedSpouse);
                     Person savedPerson = personRepository.save(person);
                     savedSpouse.setSpouse(savedPerson);

@@ -20,3 +20,17 @@ export const ERROR_MESSAGES = {
   ADD_CHILD_FAILED: "Failed to add child.",
   ADD_SPOUSE_FAILED: "Failed to add spouse.",
 };
+
+export const CHART_DIMENSIONS = {
+  width: 1100,
+  height: 900,
+};
+
+export const CARD_DIMENSIONS = {
+  w: 220,
+  h: 70,
+  img_w: 60,
+  img_h: 60,
+  img_x: 5,
+  img_y: 5,
+};
