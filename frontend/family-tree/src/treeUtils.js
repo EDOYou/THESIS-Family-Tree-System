@@ -108,7 +108,6 @@ const processRelationships = (person, personMap, debug = false) => {
 };
 
 export const buildTree = (persons, debug = false) => {
-  console.log("PERSONS: " + persons);
   const personMap = createPersonMap(persons, debug);
   if (!personMap) {
     return null;

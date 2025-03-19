@@ -102,6 +102,7 @@ public class PersonController {
         System.out.println("Received spouse: " + spouse.getName() + ", Gender: " + spouse.getGender());
         return personRepository.findById(personId)
                 .map(person -> {
+                    System.out.println("==========================================================================================================\n====================================================");
                     if (spouse.getId() == null || spouse.getId().trim().isEmpty()) {
                         spouse.setId(UUID.randomUUID().toString());
                     } else if (personRepository.findById(spouse.getId()).isPresent()) {
