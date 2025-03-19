@@ -1,8 +1,6 @@
 package com.familytree.model;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -43,19 +41,21 @@ public class Person {
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "spouse_id")
-    @JsonBackReference(value = "spouse-reference")
-    private Person spouse;
+    @ElementCollection
+    @CollectionTable(name = "person_spouses", joinColumns = @JoinColumn(name = "person_id"))
+    @Column(name = "spouse_id")
+    private List<String> spouses = new ArrayList<>();
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_id")
-    @JsonBackReference(value = "children-reference")
-    private Person parent;
+    @Column(name = "father_id")
+    private String fatherId;
 
-    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    @JsonManagedReference(value = "children-reference")
-    private List<Person> children = new ArrayList<>();
+    @Column(name = "mother_id")
+    private String motherId;
+
+    @ElementCollection
+    @CollectionTable(name = "person_children", joinColumns = @JoinColumn(name = "person_id"))
+    @Column(name = "child_id")
+    private List<String> children = new ArrayList<>();
 
     public Person() {}
 
@@ -64,5 +64,30 @@ public class Person {
         this.name = name;
         this.age = age;
         this.gender = gender;
+    }
+
+    public void addSpouse(String spouseId) {
+        if (!spouses.contains(spouseId)) {
+            spouses.add(spouseId);
+        }
+    }
+
+    public void removeSpouse(String spouseId) {
+        spouses.remove(spouseId);
+    }
+
+    public void addChild(String childId) {
+        if (!children.contains(childId)) {
+            children.add(childId);
+        }
+    }
+
+    public void removeChild(String childId) {
+        children.remove(childId);
+    }
+
+    public void setParent(String fatherId, String motherId) {
+        this.fatherId = fatherId;
+        this.motherId = motherId;
     }
 }

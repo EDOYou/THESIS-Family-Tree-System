@@ -6,7 +6,6 @@ import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Setter
 @Getter
@@ -21,9 +20,10 @@ public class PersonDTO {
     private String deathPlace;
     private Boolean hasSubTree;
     private String gender;
-    private String spouseId;
-    private String parentId;
-    private List<PersonDTO> children = new ArrayList<>();
+    private List<String> spouses = new ArrayList<>();
+    private String fatherId;
+    private String motherId;
+    private List<String> children = new ArrayList<>();
 
     public PersonDTO() {}
 
@@ -38,10 +38,9 @@ public class PersonDTO {
         this.deathPlace = person.getDeathPlace();
         this.hasSubTree = person.getHasSubTree();
         this.gender = person.getGender() != null ? person.getGender().name() : null;
-        this.spouseId = person.getSpouse() != null ? person.getSpouse().getId() : null;
-        this.parentId = person.getParent() != null ? person.getParent().getId() : null;
-        this.children = person.getChildren() != null ?
-                person.getChildren().stream().map(PersonDTO::new).collect(Collectors.toList()) :
-                new ArrayList<>();
+        this.spouses = person.getSpouses() != null ? new ArrayList<>(person.getSpouses()) : new ArrayList<>();
+        this.fatherId = person.getFatherId();
+        this.motherId = person.getMotherId();
+        this.children = person.getChildren() != null ? new ArrayList<>(person.getChildren()) : new ArrayList<>();
     }
 }

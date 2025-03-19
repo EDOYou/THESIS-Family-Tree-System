@@ -9,8 +9,9 @@ export const DEFAULT_ME_NODE = {
   deathPlace: null,
   hasSubTree: false,
   children: [],
-  spouse: null,
-  parent: null,
+  spouseId: null,
+  fatherId: null,
+  motherId: null,
 };
 
 export const ERROR_MESSAGES = {

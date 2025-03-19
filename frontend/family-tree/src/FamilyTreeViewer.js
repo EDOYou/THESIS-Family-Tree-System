@@ -2,8 +2,8 @@ import React, {
   useEffect,
   useRef,
   useState,
-  useMemo,
   useCallback,
+  useMemo,
 } from "react";
 import PropTypes from "prop-types";
 import * as d3 from "d3";
@@ -26,7 +26,11 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
   const originalTreeRef = useRef([]);
   const [error, setError] = useState(null);
 
-  const transformedTree = useMemo(() => transformTree(tree), [tree]);
+  const transformedTree = useMemo(() => {
+    const transformed = transformTree(tree);
+    console.log("Transformed Tree Data:", transformed);
+    return transformed;
+  }, [tree]);
 
   const memoizedOnTreeUpdate = useCallback(
     (updatedTree) => {
@@ -36,7 +40,10 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
   );
 
   useEffect(() => {
-    if (!transformedTree.length) return;
+    if (!transformedTree.length) {
+      console.log("No transformed tree data available, skipping render.");
+      return;
+    }
 
     const currentContainer =
       document.getElementById("FamilyChart") || containerRef.current;
@@ -60,14 +67,17 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
       const editTreeInstance = chartInstance.editTree();
       editTreeInstanceRef.current = editTreeInstance;
 
+      console.log("EditTreeInstance initialized:", editTreeInstance);
+
       editTreeInstance.setFields([
         {
           type: "switch",
           label: "Gender",
           id: "gender",
-          options: ["MALE", "FEMALE"],
+          options: ["M", "F"],
         },
-        { type: "text", label: "Name", id: "name", required: true },
+        { type: "text", label: "First Name", id: "firstName", required: true },
+        { type: "text", label: "Last Name", id: "lastName" },
         { type: "text", label: "Occupation", id: "occupation" },
         { type: "number", label: "Age", id: "age" },
         { type: "date", label: "Birth Date", id: "birthDate" },
@@ -76,6 +86,70 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
         { type: "text", label: "Death Place", id: "deathPlace" },
         { type: "checkbox", label: "Has Sub Tree", id: "hasSubTree" },
       ]);
+
+      const originalAddRelative =
+        editTreeInstance.addRelative.bind(editTreeInstance);
+      editTreeInstance.addRelative = (datum) => {
+        console.log("=== Add Relative Initiated ===");
+        console.log(
+          "Datum passed to addRelative:",
+          JSON.stringify(datum, null, 2)
+        );
+        console.log("Current AddRelativeInstance state:", {
+          is_active: editTreeInstance.addRelativeInstance.is_active,
+          datum: editTreeInstance.addRelativeInstance.datum,
+          store_data_length:
+            editTreeInstance.addRelativeInstance.store_data?.length || "N/A",
+        });
+
+        if (editTreeInstance.isAddingRelative()) {
+          console.log("AddRelative is active, cancelling previous action...");
+          const addRelativeInstance = editTreeInstance.addRelativeInstance;
+          if (addRelativeInstance) {
+            if (typeof addRelativeInstance.onCancel === "function") {
+              console.log("Calling onCancel to reset AddRelative...");
+              addRelativeInstance.onCancel();
+              console.log("After onCancel - AddRelativeInstance state:", {
+                is_active: addRelativeInstance.is_active,
+                datum: addRelativeInstance.datum,
+                store_data_length:
+                  addRelativeInstance.store_data?.length || "N/A",
+              });
+            } else {
+              console.warn(
+                "onCancel is not a function, performing manual reset..."
+              );
+              addRelativeInstance.is_active = false;
+              addRelativeInstance.store_data = null;
+              addRelativeInstance.datum = null;
+              addRelativeInstance.onChange = null;
+              addRelativeInstance.onCancel = null;
+              editTreeInstance.store.updateTree({});
+              console.log("After manual reset - AddRelativeInstance state:", {
+                is_active: addRelativeInstance.is_active,
+                datum: addRelativeInstance.datum,
+                store_data_length:
+                  addRelativeInstance.store_data?.length || "N/A",
+              });
+            }
+          }
+        } else {
+          console.log("No active AddRelative action, proceeding directly...");
+        }
+
+        console.log(
+          "Calling original addRelative with datum:",
+          JSON.stringify(datum, null, 2)
+        );
+        originalAddRelative(datum);
+        console.log("After addRelative - AddRelativeInstance state:", {
+          is_active: editTreeInstance.addRelativeInstance.is_active,
+          datum: editTreeInstance.addRelativeInstance.datum,
+          store_data_length:
+            editTreeInstance.addRelativeInstance.store_data?.length || "N/A",
+        });
+        console.log("=== Add Relative Setup Complete ===");
+      };
 
       editTreeInstance.setCardClickOpen(cardInstance);
       console.log("setCardClickOpen called");
@@ -88,30 +162,36 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
       editTreeInstance.setOnChange(async () => {
         try {
           const updatedData = JSON.parse(editTreeInstance.getDataJson());
+          console.log("Updated Data from setOnChange:", updatedData);
 
-          const updatedTree = updatedData.map((node) => ({
-            id: node.id,
-            gender:
-              node.data.gender === "M"
-                ? "MALE"
-                : node.data.gender === "F"
-                ? "FEMALE"
-                : node.data.gender,
-            name: node.data.name,
-            occupation: node.data.occupation || null,
-            age: node.data.age || null,
-            birthDate: node.data.birthDate || null,
-            deathDate: node.data.deathDate || null,
-            birthPlace: node.data.birthPlace || null,
-            deathPlace: node.data.deathPlace || null,
-            hasSubTree: node.data.hasSubTree || false,
-            parents: [
-              ...(node.rels.father ? [node.rels.father] : []),
-              ...(node.rels.mother ? [node.rels.mother] : []),
-            ],
-            spouses: node.rels.spouses || [],
-            children: node.rels.children || [],
-          }));
+          const updatedTree = updatedData.map((node) => {
+            const name =
+              [node.data.firstName, node.data.lastName]
+                .filter(Boolean)
+                .join(" ") || "Unnamed";
+
+            return {
+              id: node.id,
+              gender:
+                node.data.gender === "M"
+                  ? "MALE"
+                  : node.data.gender === "F"
+                  ? "FEMALE"
+                  : node.data.gender,
+              name,
+              occupation: node.data.occupation || null,
+              age: node.data.age || null,
+              birthDate: node.data.birthDate || null,
+              deathDate: node.data.deathDate || null,
+              birthPlace: node.data.birthPlace || null,
+              deathPlace: node.data.deathPlace || null,
+              hasSubTree: node.data.hasSubTree || false,
+              fatherId: node.rels.father || null,
+              motherId: node.rels.mother || null,
+              spouses: node.rels.spouses || [],
+              children: node.rels.children || [],
+            };
+          });
 
           const originalIds = new Set(
             originalTreeRef.current.map((node) => node.id)
@@ -144,9 +224,10 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
               birthPlace: newNode.birthPlace,
               deathPlace: newNode.deathPlace,
               hasSubTree: newNode.hasSubTree,
-              children: [],
-              spouses: [],
-              parents: [],
+              fatherId: newNode.fatherId,
+              motherId: newNode.motherId,
+              spouseId: newNode.spouses.length > 0 ? newNode.spouses[0] : null,
+              childrenIds: newNode.children,
             };
             const createdNode = await createPerson(nodeData);
             idMapping.set(newNode.id, createdNode.id.toString());
@@ -162,12 +243,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
               const resolvedSpouseId = idMapping.get(spouseId) || spouseId;
               await addSpouse(newId, { id: resolvedSpouseId });
             }
-            if (newNode.parents.length > 0) {
-              for (const parentId of newNode.parents) {
-                const resolvedParentId = idMapping.get(parentId) || parentId;
-                await addChild(resolvedParentId, { id: newId });
-              }
-            }
           }
 
           for (const updatedNode of updatedNodes) {
@@ -182,9 +257,11 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
               birthPlace: updatedNode.birthPlace,
               deathPlace: updatedNode.deathPlace,
               hasSubTree: updatedNode.hasSubTree,
-              children: updatedNode.children,
-              spouses: updatedNode.spouses,
-              parents: updatedNode.parents,
+              fatherId: updatedNode.fatherId,
+              motherId: updatedNode.motherId,
+              spouseId:
+                updatedNode.spouses.length > 0 ? updatedNode.spouses[0] : null,
+              childrenIds: updatedNode.children,
             };
             await saveOrUpdateNode(nodeData, updatedNode.id);
           }
@@ -195,22 +272,51 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
 
           const finalTree = updatedTree.map((node) => {
             const resolvedId = idMapping.get(node.id) || node.id;
+            const sanitizeRel = (rel) =>
+              rel && typeof rel === "string" ? rel : null;
+            const sanitizeRelArray = (rels) =>
+              Array.isArray(rels)
+                ? rels.filter((id) => typeof id === "string")
+                : [];
+
             return {
-              ...node,
               id: resolvedId,
-              parents: node.parents.map((id) => idMapping.get(id) || id),
-              spouses: node.spouses.map((id) => idMapping.get(id) || id),
-              children: node.children.map((id) => idMapping.get(id) || id),
+              data: {
+                gender:
+                  node.gender === "MALE"
+                    ? "M"
+                    : node.gender === "FEMALE"
+                    ? "F"
+                    : node.gender,
+                name: node.name,
+                firstName: node.name.split(" ")[0] || "",
+                lastName: node.name.split(" ").slice(1).join(" ") || "",
+                occupation: node.occupation,
+                age: node.age,
+                birthDate: node.birthDate,
+                deathDate: node.deathDate,
+                birthPlace: node.birthPlace,
+                deathPlace: node.deathPlace,
+                hasSubTree: node.hasSubTree,
+              },
+              rels: {
+                father: sanitizeRel(node.fatherId),
+                mother: sanitizeRel(node.motherId),
+                spouses: sanitizeRelArray(node.spouses),
+                children: sanitizeRelArray(node.children),
+              },
             };
           });
 
+          chartInstance.updateData(finalTree);
+
           if (
             JSON.stringify(originalTreeRef.current) !==
-            JSON.stringify(finalTree)
+            JSON.stringify(updatedTree)
           ) {
-            originalTreeRef.current = finalTree;
+            originalTreeRef.current = updatedTree;
           }
-          memoizedOnTreeUpdate(finalTree);
+          memoizedOnTreeUpdate(updatedTree);
           setError(null);
         } catch (error) {
           console.error("Error during tree update:", error);
@@ -251,23 +357,49 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
       originalTreeRef.current = transformedTree;
 
       return () => {
+        console.log("Cleaning up FamilyTreeViewer...");
         if (
           editTreeInstanceRef.current &&
           typeof editTreeInstanceRef.current.destroy === "function"
         ) {
           try {
             if (editTreeInstanceRef.current.isAddingRelative()) {
-              editTreeInstanceRef.current.addRelativeInstance.onCancel();
+              console.log(
+                "AddRelative is active during cleanup, cancelling..."
+              );
+              const addRelativeInstance =
+                editTreeInstanceRef.current.addRelativeInstance;
+              if (
+                addRelativeInstance &&
+                typeof addRelativeInstance.onCancel === "function"
+              ) {
+                addRelativeInstance.onCancel();
+              } else {
+                console.warn(
+                  "onCancel is not a function during cleanup, performing manual reset..."
+                );
+                if (addRelativeInstance) {
+                  addRelativeInstance.is_active = false;
+                  addRelativeInstance.store_data = null;
+                  addRelativeInstance.datum = null;
+                  addRelativeInstance.onChange = null;
+                  addRelativeInstance.onCancel = null;
+                  editTreeInstanceRef.current.store.updateTree({});
+                }
+              }
             }
             editTreeInstanceRef.current.destroy();
+            console.log("EditTreeInstance destroyed.");
           } catch (error) {
             console.error("Error destroying editTreeInstance:", error);
           }
         }
         if (chartInstance && typeof chartInstance.destroy === "function") {
           chartInstance.destroy();
+          console.log("ChartInstance destroyed.");
         }
         d3.select(currentContainer).selectAll("*").remove();
+        console.log("Container cleared.");
       };
     } catch (error) {
       console.error("Error rendering FamilyChart:", error);

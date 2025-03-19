@@ -38,7 +38,7 @@ export const createPerson = async (personData) => {
   try {
     console.log("Creating person:", personData);
     const response = await axios.post(API_URL, personData);
-    return response.data; // Expecting { id: String (UUID), ... }
+    return response.data;
   } catch (error) {
     console.error("Error creating person:", error);
     throw new Error("Failed to create person: " + error.message);
@@ -58,7 +58,6 @@ export const saveOrUpdateNode = async (nodeData, personId) => {
     throw new Error("Failed to save node: " + error.message);
   }
 };
-
 export const addChild = async (personId, childData) => {
   try {
     const response = await axios.post(

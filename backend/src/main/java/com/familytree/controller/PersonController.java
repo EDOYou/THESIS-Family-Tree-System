@@ -1,5 +1,6 @@
 package com.familytree.controller;
 
+import com.familytree.model.Gender;
 import com.familytree.model.Person;
 import com.familytree.model.dto.PersonDTO;
 import com.familytree.repository.PersonRepository;
@@ -30,7 +31,7 @@ public class PersonController {
 
     @GetMapping("/root")
     public ResponseEntity<PersonDTO> getFamilyTree() {
-        return personRepository.findFirstByParentIsNull()
+        return personRepository.findFirstByFatherIdIsNullAndMotherIdIsNull()
                 .map(person -> ResponseEntity.ok(new PersonDTO(person)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -41,36 +42,55 @@ public class PersonController {
         if (person.getId() == null) {
             person.setId(UUID.randomUUID().toString());
         }
-        person.setChildren(new ArrayList<>());
+        if (person.getSpouses() == null) person.setSpouses(new ArrayList<>());
+        if (person.getChildren() == null) person.setChildren(new ArrayList<>());
         Person savedPerson = personRepository.save(person);
         return ResponseEntity.ok(new PersonDTO(savedPerson));
     }
 
     @PutMapping("/{personId}")
-    public PersonDTO saveOrUpdatePerson(@PathVariable String personId, @Valid @RequestBody Person person) {
+    public ResponseEntity<PersonDTO> saveOrUpdatePerson(@PathVariable String personId, @Valid @RequestBody Person person) {
         System.out.println("Updating person: " + person.getName() + ", ID: " + person.getId());
         person.setId(personId);
+        if (person.getSpouses() == null) person.setSpouses(new ArrayList<>());
+        if (person.getChildren() == null) person.setChildren(new ArrayList<>());
         Person savedPerson = personRepository.save(person);
-        return new PersonDTO(savedPerson);
+        return ResponseEntity.ok(new PersonDTO(savedPerson));
     }
 
     @PostMapping("/{personId}/child")
     public ResponseEntity<?> addChild(@PathVariable String personId, @Valid @RequestBody Person child) {
         return personRepository.findById(personId)
                 .map(person -> {
-                    if (person.getSpouse() == null) {
-                        return ResponseEntity.badRequest().body("Cannot add a child without a spouse.");
+                    if (child.getId() == null) {
+                        child.setId(UUID.randomUUID().toString());
+                    }
+                    if (person.getSpouses().isEmpty()) {
+                        return ResponseEntity.badRequest().body("Cannot add a child without at least one spouse.");
                     }
                     if (personRepository.findByName(child.getName()).isPresent()) {
                         return ResponseEntity.badRequest().body("A person with this name already exists.");
                     }
-                    if (child.getId() == null) {
-                        throw new IllegalArgumentException("ID must be provided for new child");
-                    }
-                    child.setParent(person);
+                    child.setSpouses(new ArrayList<>());
                     child.setChildren(new ArrayList<>());
                     Person savedChild = personRepository.save(child);
-                    person.getChildren().add(savedChild);
+                    person.addChild(savedChild.getId());
+
+                    String spouseId = person.getSpouses().stream().findFirst().orElse(null);
+                    if (spouseId != null) {
+                        Person spouse = personRepository.findById(spouseId).orElse(null);
+                        if (spouse != null && spouse.getGender() == Gender.F) {
+                            savedChild.setMotherId(spouseId);
+                            savedChild.setFatherId(person.getId());
+                        } else {
+                            savedChild.setFatherId(spouseId);
+                            savedChild.setMotherId(person.getId());
+                        }
+                        personRepository.save(savedChild);
+                    } else {
+                        savedChild.setFatherId(person.getId());
+                        personRepository.save(savedChild);
+                    }
                     personRepository.save(person);
                     return ResponseEntity.ok(new PersonDTO(savedChild));
                 })
@@ -82,26 +102,68 @@ public class PersonController {
         System.out.println("Received spouse: " + spouse.getName() + ", Gender: " + spouse.getGender());
         return personRepository.findById(personId)
                 .map(person -> {
-                    if (person.getSpouse() != null) {
-                        return ResponseEntity.badRequest().body("Person already has a spouse.");
+                    if (spouse.getId() == null || spouse.getId().trim().isEmpty()) {
+                        spouse.setId(UUID.randomUUID().toString());
+                    } else if (personRepository.findById(spouse.getId()).isPresent()) {
+                        return ResponseEntity.badRequest().body("Spouse ID already exists.");
                     }
+
                     if (person.getGender() == spouse.getGender()) {
                         return ResponseEntity.badRequest().body("Spouse must be of a different gender.");
                     }
-                    if (personRepository.findByName(spouse.getName()).isPresent()) {
-                        return ResponseEntity.badRequest().body("A person with this name already exists.");
-                    }
-                    if (spouse.getId() == null) {
-                        throw new IllegalArgumentException("ID must be provided for new spouse");
-                    }
-                    spouse.setSpouse(null);
-                    spouse.setChildren(new ArrayList<>());
+
+                    if (spouse.getSpouses() == null) spouse.setSpouses(new ArrayList<>());
+                    if (spouse.getChildren() == null) spouse.setChildren(new ArrayList<>());
+                    if (person.getSpouses() == null) person.setSpouses(new ArrayList<>());
+
                     Person savedSpouse = personRepository.save(spouse);
-                    person.setSpouse(savedSpouse);
-                    Person savedPerson = personRepository.save(person);
-                    savedSpouse.setSpouse(savedPerson);
+
+                    person.addSpouse(savedSpouse.getId());
+                    savedSpouse.addSpouse(person.getId());
+
+                    personRepository.save(person);
                     personRepository.save(savedSpouse);
+
                     return ResponseEntity.ok(new PersonDTO(savedSpouse));
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{personId}")
+    public ResponseEntity<?> deletePerson(@PathVariable String personId) {
+        return personRepository.findById(personId)
+                .map(person -> {
+                    person.getSpouses().forEach(spouseId -> {
+                        Person spouse = personRepository.findById(spouseId).orElse(null);
+                        if (spouse != null) {
+                            spouse.removeSpouse(personId);
+                            personRepository.save(spouse);
+                        }
+                    });
+                    person.getChildren().forEach(childId -> {
+                        Person child = personRepository.findById(childId).orElse(null);
+                        if (child != null) {
+                            child.setFatherId(null);
+                            child.setMotherId(null);
+                            personRepository.save(child);
+                        }
+                    });
+                    if (person.getFatherId() != null) {
+                        Person father = personRepository.findById(person.getFatherId()).orElse(null);
+                        if (father != null) {
+                            father.removeChild(personId);
+                            personRepository.save(father);
+                        }
+                    }
+                    if (person.getMotherId() != null) {
+                        Person mother = personRepository.findById(person.getMotherId()).orElse(null);
+                        if (mother != null) {
+                            mother.removeChild(personId);
+                            personRepository.save(mother);
+                        }
+                    }
+                    personRepository.delete(person);
+                    return ResponseEntity.ok().build();
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }

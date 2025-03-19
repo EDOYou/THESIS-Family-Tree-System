@@ -9,9 +9,10 @@ export const createPersonMap = (persons, debug = false) => {
       p.id,
       {
         ...p,
-        children: [],
-        parents: p.parentId ? [p.parentId.toString()] : [],
-        spouses: p.spouseId ? [p.spouseId.toString()] : [],
+        children: p.childrenIds || [],
+        spouses: p.spouseId ? [p.spouseId] : [],
+        fatherId: p.fatherId || null,
+        motherId: p.motherId || null,
       },
     ])
   );
@@ -20,42 +21,39 @@ export const createPersonMap = (persons, debug = false) => {
 };
 
 export const processRelationships = (person, personMap, debug = false) => {
-  if (person.parentId) {
-    const parent = personMap.get(person.parentId);
-    if (parent) {
-      if (!parent.children.includes(person.id.toString())) {
-        parent.children.push(person.id.toString());
+  if (person.fatherId) {
+    const father = personMap.get(person.fatherId);
+    if (father) {
+      if (!father.children.includes(person.id)) {
+        father.children.push(person.id);
         logDebug(
-          `Added child ${person.id} to parent ${parent.id}`,
+          `Added child ${person.id} to father ${father.id}`,
           null,
           debug
         );
       }
+    } else {
+      logWarn(
+        `Father with ID ${person.fatherId} not found for person ${person.id}`,
+        debug
+      );
+    }
+  }
 
-      if (parent.spouseId) {
-        const spouse = personMap.get(parent.spouseId);
-        if (spouse) {
-          if (!person.parents.includes(spouse.id.toString())) {
-            person.parents.push(spouse.id.toString());
-            logDebug(
-              `Added spouse ${spouse.id} as a parent for person ${person.id}`,
-              null,
-              debug
-            );
-          }
-          if (!spouse.children.includes(person.id.toString())) {
-            spouse.children.push(person.id.toString());
-            logDebug(
-              `Added child ${person.id} to parent's spouse ${spouse.id}`,
-              null,
-              debug
-            );
-          }
-        }
+  if (person.motherId) {
+    const mother = personMap.get(person.motherId);
+    if (mother) {
+      if (!mother.children.includes(person.id)) {
+        mother.children.push(person.id);
+        logDebug(
+          `Added child ${person.id} to mother ${mother.id}`,
+          null,
+          debug
+        );
       }
     } else {
       logWarn(
-        `Parent with ID ${person.parentId} not found for person ${person.id}`,
+        `Mother with ID ${person.motherId} not found for person ${person.id}`,
         debug
       );
     }
@@ -64,8 +62,8 @@ export const processRelationships = (person, personMap, debug = false) => {
   if (person.spouseId) {
     const spouse = personMap.get(person.spouseId);
     if (spouse) {
-      if (!spouse.spouses.includes(person.id.toString())) {
-        spouse.spouses.push(person.id.toString());
+      if (!spouse.spouses.includes(person.id)) {
+        spouse.spouses.push(person.id);
         logDebug(
           `Linked spouse ${spouse.id} to person ${person.id}`,
           null,
@@ -95,7 +93,8 @@ export const buildTree = (persons, debug = false) => {
     id: person.id.toString(),
     name: person.name,
     gender: person.gender,
-    parents: person.parents,
+    fatherId: person.fatherId,
+    motherId: person.motherId,
     spouses: person.spouses,
     children: person.children,
   }));
@@ -120,8 +119,20 @@ export const transformTree = (tree) => {
       const getValidIds = (ids) =>
         (ids || []).filter((id) => allIds.has(String(id))).map(String);
 
+      console.log(
+        `Transforming node with ID ${id}:`,
+        JSON.stringify(node, null, 2)
+      );
+
       const rels = {
-        parents: getValidIds(node.parents),
+        father:
+          node.fatherId && allIds.has(String(node.fatherId))
+            ? String(node.fatherId)
+            : undefined,
+        mother:
+          node.motherId && allIds.has(String(node.motherId))
+            ? String(node.motherId)
+            : undefined,
         spouses: getValidIds(node.spouses),
         children: getValidIds(node.children),
       };
@@ -133,15 +144,6 @@ export const transformTree = (tree) => {
         (childId) => !rels.spouses.includes(childId)
       );
 
-      let father, mother;
-      if (rels.parents.length > 0) {
-        rels.parents.forEach((parentId) => {
-          const parent = tree.find((n) => String(n.id) === parentId);
-          if (parent?.gender === "MALE") father = parentId;
-          else if (parent?.gender === "FEMALE") mother = parentId;
-        });
-      }
-
       const genderValue = node.gender ? node.gender.toUpperCase() : "unknown";
       const normalizedGender =
         genderValue === "MALE" || genderValue === "M"
@@ -150,26 +152,36 @@ export const transformTree = (tree) => {
           ? "F"
           : "unknown";
 
-      return {
+      const [firstName, ...lastNameParts] = (node.name || "").split(" ");
+      const lastName = lastNameParts.join(" ") || "";
+      const name = [firstName, lastName].filter(Boolean).join(" ") || "Unnamed";
+
+      const mapEmptyToNull = (value) => (value === "" ? null : value);
+
+      const transformedNode = {
         id,
         data: {
           gender: normalizedGender,
-          name: node.name || "",
-          occupation: node.occupation || "",
-          age: node.age || "",
-          birthDate: node.birthDate || "",
-          deathDate: node.deathDate || "",
-          birthPlace: node.birthPlace || "",
-          deathPlace: node.deathPlace || "",
+          name,
+          firstName: mapEmptyToNull(firstName) || "",
+          lastName: mapEmptyToNull(lastName) || "",
+          occupation: mapEmptyToNull(node.occupation),
+          age: mapEmptyToNull(node.age),
+          birthDate: mapEmptyToNull(node.birthDate),
+          deathDate: mapEmptyToNull(node.deathDate),
+          birthPlace: mapEmptyToNull(node.birthPlace),
+          deathPlace: mapEmptyToNull(node.deathPlace),
           hasSubTree: node.hasSubTree || false,
         },
-        rels: {
-          father,
-          mother,
-          spouses: rels.spouses,
-          children: rels.children,
-        },
+        rels,
       };
+
+      console.log(
+        `Transformed node with ID ${id}:`,
+        JSON.stringify(transformedNode, null, 2)
+      );
+
+      return transformedNode;
     });
 
     const uniqueIds = new Set(transformed.map((n) => n.id));
