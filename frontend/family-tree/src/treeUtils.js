@@ -1,40 +1,67 @@
 export const createPersonMap = (persons, debug = false) => {
+  logDebug("createPersonMap: Input persons:", persons, debug);
+
   const personList = Array.isArray(persons) ? persons : [];
   if (personList.length === 0) {
     logWarn("personList is empty, returning null", debug);
     return null;
   }
+
   const personMap = new Map(
-    personList.map((p) => [
-      p.id,
-      {
-        ...p,
-        children: p.childrenIds || [],
-        spouses: p.spouseId ? [p.spouseId] : [],
-        fatherId: p.fatherId || null,
-        motherId: p.motherId || null,
-      },
-    ])
+    personList.map((p) => {
+      const personEntry = [
+        p.id,
+        {
+          ...p,
+          children: p.children || [],
+          spouses: p.spouses || [],
+          fatherId: p.fatherId || null,
+          motherId: p.motherId || null,
+        },
+      ];
+      logDebug(
+        `createPersonMap: Mapping person ${p.id}:`,
+        personEntry[1],
+        debug
+      );
+      return personEntry;
+    })
   );
-  logDebug("personMap created:", Array.from(personMap.entries()), debug);
+
+  logDebug(
+    "createPersonMap: Final personMap:",
+    Array.from(personMap.entries()),
+    debug
+  );
   return personMap;
 };
 
-export const processRelationships = (person, personMap, debug = false) => {
+const processRelationships = (person, personMap, debug = false) => {
+  logDebug(
+    `processRelationships: Before processing person ${person.id}:`,
+    person,
+    debug
+  );
+
+  person.spouses = person.spouses || [];
+  person.children = person.children || [];
+
   if (person.fatherId) {
     const father = personMap.get(person.fatherId);
     if (father) {
+      father.children = father.children || [];
       if (!father.children.includes(person.id)) {
         father.children.push(person.id);
         logDebug(
-          `Added child ${person.id} to father ${father.id}`,
-          null,
+          `processRelationships: Added ${person.id} to father ${father.id}'s children:`,
+          father,
           debug
         );
       }
     } else {
-      logWarn(
-        `Father with ID ${person.fatherId} not found for person ${person.id}`,
+      logDebug(
+        `processRelationships: Father ${person.fatherId} not found in personMap for person ${person.id}`,
+        null,
         debug
       );
     }
@@ -43,43 +70,45 @@ export const processRelationships = (person, personMap, debug = false) => {
   if (person.motherId) {
     const mother = personMap.get(person.motherId);
     if (mother) {
+      mother.children = mother.children || [];
       if (!mother.children.includes(person.id)) {
         mother.children.push(person.id);
         logDebug(
-          `Added child ${person.id} to mother ${mother.id}`,
-          null,
+          `processRelationships: Added ${person.id} to mother ${mother.id}'s children:`,
+          mother,
           debug
         );
       }
     } else {
-      logWarn(
-        `Mother with ID ${person.motherId} not found for person ${person.id}`,
+      logDebug(
+        `processRelationships: Mother ${person.motherId} not found in personMap for person ${person.id}`,
+        null,
         debug
       );
     }
   }
 
-  if (person.spouseId) {
-    const spouse = personMap.get(person.spouseId);
-    if (spouse) {
-      if (!spouse.spouses.includes(person.id)) {
-        spouse.spouses.push(person.id);
-        logDebug(
-          `Linked spouse ${spouse.id} to person ${person.id}`,
-          null,
-          debug
-        );
-      }
-    } else {
-      logWarn(
-        `Spouse with ID ${person.spouseId} not found for person ${person.id}`,
+  person.spouses = person.spouses.filter((spouseId) => {
+    const exists = personMap.has(spouseId);
+    if (!exists) {
+      logDebug(
+        `processRelationships: Removing invalid spouse ${spouseId} from person ${person.id}`,
+        null,
         debug
       );
     }
-  }
+    return exists;
+  });
+
+  logDebug(
+    `processRelationships: After processing person ${person.id}:`,
+    person,
+    debug
+  );
 };
 
 export const buildTree = (persons, debug = false) => {
+  console.log("PERSONS: " + persons);
   const personMap = createPersonMap(persons, debug);
   if (!personMap) {
     return null;
@@ -105,6 +134,8 @@ export const buildTree = (persons, debug = false) => {
 
 export const transformTree = (tree) => {
   try {
+    console.log("Input tree from backend:", JSON.stringify(tree, null, 2));
+
     const transformed = tree.map((node) => {
       if (!node.id) {
         throw new Error(
@@ -117,12 +148,13 @@ export const transformTree = (tree) => {
       const id = String(node.id);
       const allIds = new Set(tree.map((n) => String(n.id)));
       const getValidIds = (ids) =>
-        (ids || []).filter((id) => allIds.has(String(id))).map(String);
+        (ids || []).filter((id) => id && allIds.has(String(id))).map(String);
 
       console.log(
         `Transforming node with ID ${id}:`,
         JSON.stringify(node, null, 2)
       );
+      console.log(`allIds:`, Array.from(allIds));
 
       const rels = {
         father:
@@ -133,9 +165,11 @@ export const transformTree = (tree) => {
           node.motherId && allIds.has(String(node.motherId))
             ? String(node.motherId)
             : undefined,
-        spouses: getValidIds(node.spouses),
-        children: getValidIds(node.children),
+        spouses: getValidIds(node.spouses || []),
+        children: getValidIds(node.children || []),
       };
+
+      console.log(`rels before filtering:`, JSON.stringify(rels, null, 2));
 
       rels.spouses = rels.spouses.filter(
         (spouseId) => !rels.children.includes(spouseId)
@@ -143,6 +177,8 @@ export const transformTree = (tree) => {
       rels.children = rels.children.filter(
         (childId) => !rels.spouses.includes(childId)
       );
+
+      console.log(`rels after filtering:`, JSON.stringify(rels, null, 2));
 
       const genderValue = node.gender ? node.gender.toUpperCase() : "unknown";
       const normalizedGender =

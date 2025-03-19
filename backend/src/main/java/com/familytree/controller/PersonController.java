@@ -124,6 +124,7 @@ public class PersonController {
                     personRepository.save(person);
                     personRepository.save(savedSpouse);
 
+                    System.out.println("END ........");
                     return ResponseEntity.ok(new PersonDTO(savedSpouse));
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());

@@ -162,7 +162,10 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
       editTreeInstance.setOnChange(async () => {
         try {
           const updatedData = JSON.parse(editTreeInstance.getDataJson());
-          console.log("Updated Data from setOnChange:", updatedData);
+          console.log(
+            "Updated Data from setOnChange:",
+            JSON.stringify(updatedData, null, 2)
+          );
 
           const updatedTree = updatedData.map((node) => {
             const name =
@@ -172,12 +175,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
 
             return {
               id: node.id,
-              gender:
-                node.data.gender === "M"
-                  ? "MALE"
-                  : node.data.gender === "F"
-                  ? "FEMALE"
-                  : node.data.gender,
+              gender: node.data.gender,
               name,
               occupation: node.data.occupation || null,
               age: node.data.age || null,
@@ -190,22 +188,27 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
               motherId: node.rels.mother || null,
               spouses: node.rels.spouses || [],
               children: node.rels.children || [],
+              _new_rel_data: node._new_rel_data,
             };
           });
+
+          console.log(
+            "Updated Tree (before backend sync):",
+            JSON.stringify(updatedTree, null, 2)
+          );
 
           const originalIds = new Set(
             originalTreeRef.current.map((node) => node.id)
           );
           const updatedIds = new Set(updatedTree.map((node) => node.id));
-          const newNodes = updatedTree.filter((node) =>
-            node.id.startsWith("f3-")
+          const newNodes = updatedTree.filter(
+            (node) => !originalIds.has(node.id)
           );
           const deletedNodes = originalTreeRef.current.filter(
             (node) => !updatedIds.has(node.id)
           );
-          const updatedNodes = updatedTree.filter(
+          let updatedNodes = updatedTree.filter(
             (node) =>
-              !node.id.startsWith("f3-") &&
               originalIds.has(node.id) &&
               JSON.stringify(
                 originalTreeRef.current.find((n) => n.id === node.id)
@@ -214,63 +217,223 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
 
           const idMapping = new Map();
           for (const newNode of newNodes) {
-            const nodeData = {
-              gender: newNode.gender,
-              name: newNode.name,
-              occupation: newNode.occupation,
-              age: newNode.age,
-              birthDate: newNode.birthDate,
-              deathDate: newNode.deathDate,
-              birthPlace: newNode.birthPlace,
-              deathPlace: newNode.deathPlace,
-              hasSubTree: newNode.hasSubTree,
-              fatherId: newNode.fatherId,
-              motherId: newNode.motherId,
-              spouseId: newNode.spouses.length > 0 ? newNode.spouses[0] : null,
-              childrenIds: newNode.children,
-            };
-            const createdNode = await createPerson(nodeData);
-            idMapping.set(newNode.id, createdNode.id.toString());
+            const relType = newNode._new_rel_data?.rel_type;
+            const isSpouse = newNode.spouses.length > 0;
+            const spouseId = isSpouse ? newNode.spouses[0] : null;
+            const spouseNode = spouseId
+              ? updatedTree.find((node) => node.id === spouseId)
+              : null;
+
+            try {
+              if (relType === "spouse" && isSpouse && spouseNode) {
+                const spouseData = {
+                  gender: newNode.gender,
+                  name: newNode.name,
+                  occupation: newNode.occupation,
+                  age: newNode.age,
+                  birthDate: newNode.birthDate,
+                  deathDate: newNode.deathDate,
+                  birthPlace: newNode.birthPlace,
+                  deathPlace: newNode.deathPlace,
+                  hasSubTree: newNode.hasSubTree,
+                  fatherId: newNode.fatherId,
+                  motherId: newNode.motherId,
+                  spouses: newNode.spouses,
+                  children: newNode.children,
+                };
+                console.log(
+                  "Adding new spouse with data:",
+                  JSON.stringify(spouseData, null, 2)
+                );
+                const createdSpouse = await addSpouse(spouseId, spouseData);
+                console.log(
+                  "Created spouse response:",
+                  JSON.stringify(createdSpouse, null, 2)
+                );
+                idMapping.set(newNode.id, createdSpouse.id.toString());
+                continue;
+              } else if (
+                relType === "child" &&
+                (newNode.fatherId || newNode.motherId)
+              ) {
+                const parentId = newNode.fatherId || newNode.motherId;
+                const parentNode = updatedTree.find(
+                  (node) => node.id === parentId
+                );
+                if (parentNode) {
+                  const childData = {
+                    gender: newNode.gender,
+                    name: newNode.name,
+                    occupation: newNode.occupation,
+                    age: newNode.age,
+                    birthDate: newNode.birthDate,
+                    deathDate: newNode.deathDate,
+                    birthPlace: newNode.birthPlace,
+                    deathPlace: newNode.deathPlace,
+                    hasSubTree: newNode.hasSubTree,
+                    fatherId: newNode.fatherId,
+                    motherId: newNode.motherId,
+                    spouses: newNode.spouses,
+                    children: newNode.children,
+                  };
+                  console.log(
+                    "Adding new child with data:",
+                    JSON.stringify(childData, null, 2)
+                  );
+                  const createdChild = await addChild(parentId, childData);
+                  console.log(
+                    "Created child response:",
+                    JSON.stringify(createdChild, null, 2)
+                  );
+                  idMapping.set(newNode.id, createdChild.id.toString());
+                  continue;
+                }
+              }
+
+              const nodeData = {
+                gender: newNode.gender,
+                name: newNode.name,
+                occupation: newNode.occupation,
+                age: newNode.age,
+                birthDate: newNode.birthDate,
+                deathDate: newNode.deathDate,
+                birthPlace: newNode.birthPlace,
+                deathPlace: newNode.deathPlace,
+                hasSubTree: newNode.hasSubTree,
+                fatherId: newNode.fatherId,
+                motherId: newNode.motherId,
+                spouses: newNode.spouses,
+                children: newNode.children,
+              };
+              console.log(
+                "Creating new node with data:",
+                JSON.stringify(nodeData, null, 2)
+              );
+              const createdNode = await createPerson(nodeData);
+              console.log(
+                "Created node response:",
+                JSON.stringify(createdNode, null, 2)
+              );
+              idMapping.set(newNode.id, createdNode.id.toString());
+            } catch (error) {
+              console.error(
+                `Failed to create new node ${newNode.name} (${newNode.id}):`,
+                error.response?.data || error.message
+              );
+              throw error;
+            }
           }
 
-          for (const newNode of newNodes) {
-            const newId = idMapping.get(newNode.id);
-            for (const childId of newNode.children) {
-              const resolvedChildId = idMapping.get(childId) || childId;
-              await addChild(newId, { id: resolvedChildId });
-            }
-            for (const spouseId of newNode.spouses) {
-              const resolvedSpouseId = idMapping.get(spouseId) || spouseId;
-              await addSpouse(newId, { id: resolvedSpouseId });
-            }
-          }
+          const updatedTreeWithRealIds = updatedTree.map((node) => ({
+            ...node,
+            id: idMapping.get(node.id) || node.id,
+            fatherId: idMapping.get(node.fatherId) || node.fatherId,
+            motherId: idMapping.get(node.motherId) || node.motherId,
+            spouses: node.spouses.map(
+              (spouseId) => idMapping.get(spouseId) || spouseId
+            ),
+            children: node.children.map(
+              (childId) => idMapping.get(childId) || childId
+            ),
+          }));
+
+          console.log(
+            "Updated Tree with Real IDs:",
+            JSON.stringify(updatedTreeWithRealIds, null, 2)
+          );
 
           for (const updatedNode of updatedNodes) {
-            const nodeData = {
-              id: updatedNode.id,
-              gender: updatedNode.gender,
-              name: updatedNode.name,
-              occupation: updatedNode.occupation,
-              age: updatedNode.age,
-              birthDate: updatedNode.birthDate,
-              deathDate: updatedNode.deathDate,
-              birthPlace: updatedNode.birthPlace,
-              deathPlace: updatedNode.deathPlace,
-              hasSubTree: updatedNode.hasSubTree,
-              fatherId: updatedNode.fatherId,
-              motherId: updatedNode.motherId,
-              spouseId:
-                updatedNode.spouses.length > 0 ? updatedNode.spouses[0] : null,
-              childrenIds: updatedNode.children,
-            };
-            await saveOrUpdateNode(nodeData, updatedNode.id);
+            const originalNode = originalTreeRef.current.find(
+              (n) => n.id === updatedNode.id
+            );
+
+            const originalSpouses = originalNode.spouses || [];
+            const updatedSpouses = updatedNode.spouses || [];
+            const addedSpouses = updatedSpouses.filter(
+              (spouseId) => !originalSpouses.includes(spouseId)
+            );
+
+            for (const spouseId of addedSpouses) {
+              const spouseNode = updatedTreeWithRealIds.find(
+                (node) => node.id === spouseId
+              );
+              if (spouseNode) {
+                if (updatedNode.id < spouseId) {
+                  const spouseData = {
+                    id: spouseNode.id,
+                    gender: spouseNode.gender,
+                    name: spouseNode.name,
+                    occupation: spouseNode.occupation,
+                    age: spouseNode.age,
+                    birthDate: spouseNode.birthDate,
+                    deathDate: spouseNode.deathDate,
+                    birthPlace: spouseNode.birthPlace,
+                    deathPlace: spouseNode.deathPlace,
+                    hasSubTree: spouseNode.hasSubTree,
+                    fatherId: spouseNode.fatherId,
+                    motherId: spouseNode.motherId,
+                    spouses: spouseNode.spouses,
+                    children: spouseNode.children,
+                  };
+                  console.log(
+                    `Linking existing spouse ${spouseNode.name} to ${updatedNode.name}:`,
+                    JSON.stringify(spouseData, null, 2)
+                  );
+                  try {
+                    await addSpouse(updatedNode.id, spouseData);
+                  } catch (error) {
+                    console.error(
+                      `Failed to link spouse ${spouseNode.name} to ${updatedNode.name}:`,
+                      error.response?.data || error.message
+                    );
+                    throw error;
+                  }
+                }
+              }
+            }
+
+            const hasNonRelationshipChanges =
+              originalNode &&
+              (updatedNode.name !== originalNode.name ||
+                updatedNode.gender !== originalNode.gender ||
+                updatedNode.occupation !== originalNode.occupation ||
+                updatedNode.age !== originalNode.age ||
+                updatedNode.birthDate !== originalNode.birthDate ||
+                updatedNode.deathDate !== originalNode.deathDate ||
+                updatedNode.birthPlace !== originalNode.birthPlace ||
+                updatedNode.deathPlace !== originalNode.deathPlace ||
+                updatedNode.hasSubTree !== originalNode.hasSubTree);
+
+            if (hasNonRelationshipChanges) {
+              const nodeData = {
+                id: updatedNode.id,
+                gender: updatedNode.gender,
+                name: updatedNode.name,
+                occupation: updatedNode.occupation,
+                age: updatedNode.age,
+                birthDate: updatedNode.birthDate,
+                deathDate: updatedNode.deathDate,
+                birthPlace: updatedNode.birthPlace,
+                deathPlace: updatedNode.deathPlace,
+                hasSubTree: updatedNode.hasSubTree,
+                fatherId: updatedNode.fatherId,
+                motherId: updatedNode.motherId,
+                spouses: updatedNode.spouses,
+                children: updatedNode.children,
+              };
+              console.log(
+                "Saving updated node with data:",
+                JSON.stringify(nodeData, null, 2)
+              );
+              await saveOrUpdateNode(nodeData, updatedNode.id);
+            }
           }
 
           for (const deletedNode of deletedNodes) {
             await deletePerson(deletedNode.id);
           }
 
-          const finalTree = updatedTree.map((node) => {
+          const finalTree = updatedTreeWithRealIds.map((node) => {
             const resolvedId = idMapping.get(node.id) || node.id;
             const sanitizeRel = (rel) =>
               rel && typeof rel === "string" ? rel : null;
@@ -282,12 +445,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
             return {
               id: resolvedId,
               data: {
-                gender:
-                  node.gender === "MALE"
-                    ? "M"
-                    : node.gender === "FEMALE"
-                    ? "F"
-                    : node.gender,
+                gender: node.gender,
                 name: node.name,
                 firstName: node.name.split(" ")[0] || "",
                 lastName: node.name.split(" ").slice(1).join(" ") || "",
@@ -308,6 +466,11 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
             };
           });
 
+          console.log(
+            "Final Tree after backend sync:",
+            JSON.stringify(finalTree, null, 2)
+          );
+
           chartInstance.updateData(finalTree);
 
           if (
@@ -316,11 +479,13 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
           ) {
             originalTreeRef.current = updatedTree;
           }
-          memoizedOnTreeUpdate(updatedTree);
+
+          memoizedOnTreeUpdate();
           setError(null);
         } catch (error) {
           console.error("Error during tree update:", error);
           setError("Failed to update the tree. Please try again.");
+          chartInstance.updateData(originalTreeRef.current);
           throw error;
         }
       });

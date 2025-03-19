@@ -41,7 +41,7 @@ public class Person {
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "person_spouses", joinColumns = @JoinColumn(name = "person_id"))
     @Column(name = "spouse_id")
     private List<String> spouses = new ArrayList<>();

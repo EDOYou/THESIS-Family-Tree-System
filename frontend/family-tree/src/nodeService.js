@@ -94,5 +94,3 @@ export const deletePerson = async (personId) => {
     throw new Error("Failed to delete person: " + error.message);
   }
 };
-
-export const MY_ID = 1;
