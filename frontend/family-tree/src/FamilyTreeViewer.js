@@ -197,23 +197,119 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
             JSON.stringify(updatedTree, null, 2)
           );
 
-          const originalIds = new Set(
-            originalTreeRef.current.map((node) => node.id)
+          console.log(
+            "Original Tree State (originalTreeRef.current):",
+            JSON.stringify(originalTreeRef.current, null, 2)
           );
+
+          const transformedOriginalTree = originalTreeRef.current.map(
+            (node) => {
+              if (node.data && node.rels) {
+                const name =
+                  [node.data.firstName, node.data.lastName]
+                    .filter(Boolean)
+                    .join(" ") || "Unnamed";
+
+                return {
+                  id: node.id,
+                  gender: node.data.gender || null,
+                  name,
+                  occupation: node.data.occupation || null,
+                  age: node.data.age || null,
+                  birthDate: node.data.birthDate || null,
+                  deathDate: node.data.deathDate || null,
+                  birthPlace: node.data.birthPlace || null,
+                  deathPlace: node.data.deathPlace || null,
+                  hasSubTree: node.data.hasSubTree || false,
+                  fatherId: node.rels.father || null,
+                  motherId: node.rels.mother || null,
+                  spouses: node.rels.spouses || [],
+                  children: node.rels.children || [],
+                };
+              }
+              return node;
+            }
+          );
+
+          console.log(
+            "Transformed Original Tree for comparison:",
+            JSON.stringify(transformedOriginalTree, null, 2)
+          );
+
+          const originalIds = new Set(
+            transformedOriginalTree.map((node) => node.id)
+          );
+          console.log("Original IDs in transformedOriginalTree:", [
+            ...originalIds,
+          ]);
+
           const updatedIds = new Set(updatedTree.map((node) => node.id));
+          console.log("Updated IDs in updatedTree:", [...updatedIds]);
+
           const newNodes = updatedTree.filter(
             (node) => !originalIds.has(node.id)
           );
-          const deletedNodes = originalTreeRef.current.filter(
+          console.log("New Nodes:", JSON.stringify(newNodes, null, 2));
+
+          const deletedNodes = transformedOriginalTree.filter(
             (node) => !updatedIds.has(node.id)
           );
-          let updatedNodes = updatedTree.filter(
-            (node) =>
-              originalIds.has(node.id) &&
-              JSON.stringify(
-                originalTreeRef.current.find((n) => n.id === node.id)
-              ) !== JSON.stringify(node)
-          );
+          console.log("Deleted Nodes:", JSON.stringify(deletedNodes, null, 2));
+
+          let updatedNodes = [];
+          for (const node of updatedTree) {
+            if (!originalIds.has(node.id)) {
+              console.log(
+                `Node ${node.name} (${node.id}) is a new node, skipping update check.`
+              );
+              continue;
+            }
+            const originalNode = transformedOriginalTree.find(
+              (n) => n.id === node.id
+            );
+            const originalSubset = {
+              name: originalNode.name ?? null,
+              gender: originalNode.gender ?? null,
+              occupation: originalNode.occupation ?? null,
+              age: originalNode.age ?? null,
+              birthDate: originalNode.birthDate ?? null,
+              deathDate: originalNode.deathDate ?? null,
+              birthPlace: originalNode.birthPlace ?? null,
+              deathPlace: originalNode.deathPlace ?? null,
+              hasSubTree: originalNode.hasSubTree ?? false,
+              fatherId: originalNode.fatherId ?? null,
+              motherId: originalNode.motherId ?? null,
+              spouses: originalNode.spouses ?? [],
+              children: originalNode.children ?? [],
+            };
+            const updatedSubset = {
+              name: node.name ?? null,
+              gender: node.gender ?? null,
+              occupation: node.occupation ?? null,
+              age: node.age ?? null,
+              birthDate: node.birthDate ?? null,
+              deathDate: node.deathDate ?? null,
+              birthPlace: node.birthPlace ?? null,
+              deathPlace: node.deathPlace ?? null,
+              hasSubTree: node.hasSubTree ?? false,
+              fatherId: node.fatherId ?? null,
+              motherId: node.motherId ?? null,
+              spouses: node.spouses ?? [],
+              children: node.children ?? [],
+            };
+            const isUpdated =
+              JSON.stringify(originalSubset) !== JSON.stringify(updatedSubset);
+            console.log(`Comparing node ${node.name} (${node.id}):`);
+            console.log("Original:", JSON.stringify(originalSubset, null, 2));
+            console.log("Updated:", JSON.stringify(updatedSubset, null, 2));
+            console.log(
+              `Is node ${node.name} (${node.id}) updated? ${isUpdated}`
+            );
+            if (isUpdated) {
+              updatedNodes.push(node);
+            }
+          }
+          console.log("Updated Nodes:", JSON.stringify(updatedNodes, null, 2));
 
           const idMapping = new Map();
           for (const newNode of newNodes) {
@@ -225,7 +321,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
               : null;
 
             try {
-              if (relType === "spouse" && isSpouse && spouseNode) {
+              if (isSpouse && spouseNode) {
                 const spouseData = {
                   gender: newNode.gender,
                   name: newNode.name,
@@ -251,6 +347,35 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
                   JSON.stringify(createdSpouse, null, 2)
                 );
                 idMapping.set(newNode.id, createdSpouse.id.toString());
+
+                const spouseNodeInOriginal = transformedOriginalTree.find(
+                  (n) => n.id === spouseId
+                );
+                if (spouseNodeInOriginal) {
+                  spouseNodeInOriginal.spouses =
+                    spouseNodeInOriginal.spouses || [];
+                  if (
+                    !spouseNodeInOriginal.spouses.includes(createdSpouse.id)
+                  ) {
+                    spouseNodeInOriginal.spouses.push(createdSpouse.id);
+                  }
+                }
+                transformedOriginalTree.push({
+                  id: createdSpouse.id,
+                  gender: newNode.gender,
+                  name: newNode.name,
+                  occupation: newNode.occupation,
+                  age: newNode.age,
+                  birthDate: newNode.birthDate,
+                  deathDate: newNode.deathDate,
+                  birthPlace: newNode.birthPlace,
+                  deathPlace: newNode.deathPlace,
+                  hasSubTree: newNode.hasSubTree,
+                  fatherId: newNode.fatherId,
+                  motherId: newNode.motherId,
+                  spouses: newNode.spouses,
+                  children: newNode.children,
+                });
                 continue;
               } else if (
                 relType === "child" &&
@@ -343,7 +468,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
           );
 
           for (const updatedNode of updatedNodes) {
-            const originalNode = originalTreeRef.current.find(
+            const originalNode = transformedOriginalTree.find(
               (n) => n.id === updatedNode.id
             );
 
@@ -353,41 +478,88 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
               (spouseId) => !originalSpouses.includes(spouseId)
             );
 
+            console.log(
+              `Processing updated node ${updatedNode.name} (${updatedNode.id}):`,
+              JSON.stringify(updatedNode, null, 2)
+            );
+            console.log(
+              `Original spouses for ${updatedNode.name}:`,
+              originalSpouses
+            );
+            console.log(
+              `Updated spouses for ${updatedNode.name}:`,
+              updatedSpouses
+            );
+            console.log(`Added spouses for ${updatedNode.name}:`, addedSpouses);
+
             for (const spouseId of addedSpouses) {
               const spouseNode = updatedTreeWithRealIds.find(
                 (node) => node.id === spouseId
               );
+              console.log(
+                `Processing spouse ${spouseId} for ${updatedNode.name}:`,
+                spouseNode ? JSON.stringify(spouseNode, null, 2) : "Not found"
+              );
               if (spouseNode) {
-                if (updatedNode.id < spouseId) {
-                  const spouseData = {
-                    id: spouseNode.id,
-                    gender: spouseNode.gender,
-                    name: spouseNode.name,
-                    occupation: spouseNode.occupation,
-                    age: spouseNode.age,
-                    birthDate: spouseNode.birthDate,
-                    deathDate: spouseNode.deathDate,
-                    birthPlace: spouseNode.birthPlace,
-                    deathPlace: spouseNode.deathPlace,
-                    hasSubTree: spouseNode.hasSubTree,
-                    fatherId: spouseNode.fatherId,
-                    motherId: spouseNode.motherId,
-                    spouses: spouseNode.spouses,
-                    children: spouseNode.children,
-                  };
+                const spouseOriginalNode = transformedOriginalTree.find(
+                  (n) => n.id === spouseId
+                );
+                const spouseOriginalSpouses = spouseOriginalNode?.spouses || [];
+                console.log(
+                  `Original spouses for spouse ${spouseNode.name} (${spouseId}):`,
+                  spouseOriginalSpouses
+                );
+                if (spouseOriginalSpouses.includes(updatedNode.id)) {
                   console.log(
-                    `Linking existing spouse ${spouseNode.name} to ${updatedNode.name}:`,
-                    JSON.stringify(spouseData, null, 2)
+                    `Skipping linking ${spouseNode.name} to ${updatedNode.name}: already linked in original tree`
                   );
-                  try {
-                    await addSpouse(updatedNode.id, spouseData);
-                  } catch (error) {
-                    console.error(
-                      `Failed to link spouse ${spouseNode.name} to ${updatedNode.name}:`,
-                      error.response?.data || error.message
-                    );
-                    throw error;
+                  continue;
+                }
+
+                const spouseData = {
+                  id: updatedNode.id,
+                  gender: updatedNode.gender,
+                  name: updatedNode.name,
+                  occupation: updatedNode.occupation,
+                  age: updatedNode.age,
+                  birthDate: updatedNode.birthDate,
+                  deathDate: updatedNode.deathDate,
+                  birthPlace: updatedNode.birthPlace,
+                  deathPlace: updatedNode.deathPlace,
+                  hasSubTree: updatedNode.hasSubTree,
+                  fatherId: updatedNode.fatherId,
+                  motherId: updatedNode.motherId,
+                  spouses: updatedNode.spouses,
+                  children: updatedNode.children,
+                };
+                console.log(
+                  `Linking ${updatedNode.name} as spouse to ${spouseNode.name}:`,
+                  JSON.stringify(spouseData, null, 2)
+                );
+                try {
+                  await addSpouse(spouseId, spouseData);
+                  originalNode.spouses = originalNode.spouses || [];
+                  if (!originalNode.spouses.includes(spouseId)) {
+                    originalNode.spouses.push(spouseId);
                   }
+                  const spouseInOriginalUpdated = transformedOriginalTree.find(
+                    (n) => n.id === spouseId
+                  );
+                  if (spouseInOriginalUpdated) {
+                    spouseInOriginalUpdated.spouses =
+                      spouseInOriginalUpdated.spouses || [];
+                    if (
+                      !spouseInOriginalUpdated.spouses.includes(updatedNode.id)
+                    ) {
+                      spouseInOriginalUpdated.spouses.push(updatedNode.id);
+                    }
+                  }
+                } catch (error) {
+                  console.error(
+                    `Failed to link ${updatedNode.name} to ${spouseNode.name}:`,
+                    error.response?.data || error.message
+                  );
+                  throw error;
                 }
               }
             }
@@ -403,6 +575,11 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
                 updatedNode.birthPlace !== originalNode.birthPlace ||
                 updatedNode.deathPlace !== originalNode.deathPlace ||
                 updatedNode.hasSubTree !== originalNode.hasSubTree);
+
+            console.log(
+              `Non-relationship changes for ${updatedNode.name} (${updatedNode.id}):`,
+              hasNonRelationshipChanges
+            );
 
             if (hasNonRelationshipChanges) {
               const nodeData = {
@@ -473,12 +650,11 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
 
           chartInstance.updateData(finalTree);
 
-          if (
-            JSON.stringify(originalTreeRef.current) !==
-            JSON.stringify(updatedTree)
-          ) {
-            originalTreeRef.current = updatedTree;
-          }
+          originalTreeRef.current = updatedTreeWithRealIds;
+          console.log(
+            "Updated originalTreeRef.current after sync:",
+            JSON.stringify(originalTreeRef.current, null, 2)
+          );
 
           memoizedOnTreeUpdate();
           setError(null);
@@ -519,7 +695,41 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
 
       chartInstance.updateTree({ initial: false });
 
-      originalTreeRef.current = transformedTree;
+      if (!originalTreeRef.current || originalTreeRef.current.length === 0) {
+        originalTreeRef.current = transformedTree.map((node) => {
+          const name =
+            [node.data.firstName, node.data.lastName]
+              .filter(Boolean)
+              .join(" ") || "Unnamed";
+
+          return {
+            id: node.id,
+            gender: node.data.gender || null,
+            name,
+            occupation: node.data.occupation || null,
+            age: node.data.age || null,
+            birthDate: node.data.birthDate || null,
+            deathDate: node.data.deathDate || null,
+            birthPlace: node.data.birthPlace || null,
+            deathPlace: node.data.deathPlace || null,
+            hasSubTree: node.data.hasSubTree || false,
+            fatherId: node.rels.father || null,
+            motherId: node.rels.mother || null,
+            spouses: node.rels.spouses || [],
+            children: node.rels.children || [],
+          };
+        });
+
+        console.log(
+          "Initialized originalTreeRef.current:",
+          JSON.stringify(originalTreeRef.current, null, 2)
+        );
+      } else {
+        console.log(
+          "originalTreeRef.current already initialized, skipping re-initialization:",
+          JSON.stringify(originalTreeRef.current, null, 2)
+        );
+      }
 
       return () => {
         console.log("Cleaning up FamilyTreeViewer...");
