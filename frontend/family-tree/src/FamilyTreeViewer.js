@@ -255,7 +255,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
             (node) => !updatedIds.has(node.id)
           );
           console.log("Deleted Nodes:", JSON.stringify(deletedNodes, null, 2));
-
+          
           const idMapping = new Map();
           for (const newNode of newNodes) {
             const relType = newNode._new_rel_data?.rel_type;
@@ -577,6 +577,11 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
                 updatedNode.hasSubTree !== originalNode.hasSubTree ||
                 updatedNode.fatherId !== originalNode.fatherId ||
                 updatedNode.motherId !== originalNode.motherId);
+
+            console.log(
+              `Non-relationship changes for ${updatedNode.name} (${updatedNode.id}):`,
+              hasNonRelationshipChanges
+            );
 
             console.log(
               `Non-relationship changes for ${updatedNode.name} (${updatedNode.id}):`,
