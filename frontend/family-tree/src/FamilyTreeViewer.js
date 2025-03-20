@@ -256,61 +256,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
           );
           console.log("Deleted Nodes:", JSON.stringify(deletedNodes, null, 2));
 
-          let updatedNodes = [];
-          for (const node of updatedTree) {
-            if (!originalIds.has(node.id)) {
-              console.log(
-                `Node ${node.name} (${node.id}) is a new node, skipping update check.`
-              );
-              continue;
-            }
-            const originalNode = transformedOriginalTree.find(
-              (n) => n.id === node.id
-            );
-            const originalSubset = {
-              name: originalNode.name ?? null,
-              gender: originalNode.gender ?? null,
-              occupation: originalNode.occupation ?? null,
-              age: originalNode.age ?? null,
-              birthDate: originalNode.birthDate ?? null,
-              deathDate: originalNode.deathDate ?? null,
-              birthPlace: originalNode.birthPlace ?? null,
-              deathPlace: originalNode.deathPlace ?? null,
-              hasSubTree: originalNode.hasSubTree ?? false,
-              fatherId: originalNode.fatherId ?? null,
-              motherId: originalNode.motherId ?? null,
-              spouses: originalNode.spouses ?? [],
-              children: originalNode.children ?? [],
-            };
-            const updatedSubset = {
-              name: node.name ?? null,
-              gender: node.gender ?? null,
-              occupation: node.occupation ?? null,
-              age: node.age ?? null,
-              birthDate: node.birthDate ?? null,
-              deathDate: node.deathDate ?? null,
-              birthPlace: node.birthPlace ?? null,
-              deathPlace: node.deathPlace ?? null,
-              hasSubTree: node.hasSubTree ?? false,
-              fatherId: node.fatherId ?? null,
-              motherId: node.motherId ?? null,
-              spouses: node.spouses ?? [],
-              children: node.children ?? [],
-            };
-            const isUpdated =
-              JSON.stringify(originalSubset) !== JSON.stringify(updatedSubset);
-            console.log(`Comparing node ${node.name} (${node.id}):`);
-            console.log("Original:", JSON.stringify(originalSubset, null, 2));
-            console.log("Updated:", JSON.stringify(updatedSubset, null, 2));
-            console.log(
-              `Is node ${node.name} (${node.id}) updated? ${isUpdated}`
-            );
-            if (isUpdated) {
-              updatedNodes.push(node);
-            }
-          }
-          console.log("Updated Nodes:", JSON.stringify(updatedNodes, null, 2));
-
           const idMapping = new Map();
           for (const newNode of newNodes) {
             const relType = newNode._new_rel_data?.rel_type;
@@ -467,6 +412,61 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
             JSON.stringify(updatedTreeWithRealIds, null, 2)
           );
 
+          let updatedNodes = [];
+          for (const node of updatedTreeWithRealIds) {
+            if (!originalIds.has(node.id)) {
+              console.log(
+                `Node ${node.name} (${node.id}) is a new node, skipping update check.`
+              );
+              continue;
+            }
+            const originalNode = transformedOriginalTree.find(
+              (n) => n.id === node.id
+            );
+            const originalSubset = {
+              name: originalNode.name ?? null,
+              gender: originalNode.gender ?? null,
+              occupation: originalNode.occupation ?? null,
+              age: originalNode.age ?? null,
+              birthDate: originalNode.birthDate ?? null,
+              deathDate: originalNode.deathDate ?? null,
+              birthPlace: originalNode.birthPlace ?? null,
+              deathPlace: originalNode.deathPlace ?? null,
+              hasSubTree: originalNode.hasSubTree ?? false,
+              fatherId: originalNode.fatherId ?? null,
+              motherId: originalNode.motherId ?? null,
+              spouses: originalNode.spouses ?? [],
+              children: originalNode.children ?? [],
+            };
+            const updatedSubset = {
+              name: node.name ?? null,
+              gender: node.gender ?? null,
+              occupation: node.occupation ?? null,
+              age: node.age ?? null,
+              birthDate: node.birthDate ?? null,
+              deathDate: node.deathDate ?? null,
+              birthPlace: node.birthPlace ?? null,
+              deathPlace: node.deathPlace ?? null,
+              hasSubTree: node.hasSubTree ?? false,
+              fatherId: node.fatherId ?? null,
+              motherId: node.motherId ?? null,
+              spouses: node.spouses ?? [],
+              children: node.children ?? [],
+            };
+            const isUpdated =
+              JSON.stringify(originalSubset) !== JSON.stringify(updatedSubset);
+            console.log(`Comparing node ${node.name} (${node.id}):`);
+            console.log("Original:", JSON.stringify(originalSubset, null, 2));
+            console.log("Updated:", JSON.stringify(updatedSubset, null, 2));
+            console.log(
+              `Is node ${node.name} (${node.id}) updated? ${isUpdated}`
+            );
+            if (isUpdated) {
+              updatedNodes.push(node);
+            }
+          }
+          console.log("Updated Nodes:", JSON.stringify(updatedNodes, null, 2));
+
           for (const updatedNode of updatedNodes) {
             const originalNode = transformedOriginalTree.find(
               (n) => n.id === updatedNode.id
@@ -574,7 +574,9 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
                 updatedNode.deathDate !== originalNode.deathDate ||
                 updatedNode.birthPlace !== originalNode.birthPlace ||
                 updatedNode.deathPlace !== originalNode.deathPlace ||
-                updatedNode.hasSubTree !== originalNode.hasSubTree);
+                updatedNode.hasSubTree !== originalNode.hasSubTree ||
+                updatedNode.fatherId !== originalNode.fatherId ||
+                updatedNode.motherId !== originalNode.motherId);
 
             console.log(
               `Non-relationship changes for ${updatedNode.name} (${updatedNode.id}):`,
