@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import FamilyTreeViewer from "./FamilyTreeViewer";
 import Login from "./Login";
 import Register from "./Register";
+import ProtectedRoute from "./ProtectedRoute";
 import { buildTree } from "./treeUtils";
 import { fetchFamilyTree, createPerson } from "./nodeService";
 import { DEFAULT_ME_NODE } from "./constants";
+import { useAuth } from "./AuthContext";
 
 const App = () => {
   const [tree, setTree] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [error, setError] = useState(null);
   const debug = true;
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const loadTree = async () => {
     try {
@@ -55,16 +59,33 @@ const App = () => {
   };
 
   useEffect(() => {
-    loadTree();
-  }, [refreshKey, debug]);
+    if (user) {
+      loadTree();
+    }
+  }, [refreshKey, debug, user]);
 
   const handleTreeUpdate = () => {
     setRefreshKey((prev) => prev + 1);
     setError(null);
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
   const FamilyTreePage = () => (
     <div style={{ textAlign: "center", padding: "20px" }}>
+      {user && (
+        <div style={{ marginBottom: "10px" }}>
+          <span>
+            Welcome, {user.username} ({user.role})
+          </span>
+          <button onClick={handleLogout} style={{ marginLeft: "10px" }}>
+            Logout
+          </button>
+        </div>
+      )}
       {error && (
         <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>
       )}
@@ -80,7 +101,11 @@ const App = () => {
         }}
       >
         {tree.length > 0 ? (
-          <FamilyTreeViewer tree={tree} onTreeUpdate={handleTreeUpdate} />
+          <FamilyTreeViewer
+            tree={tree}
+            onTreeUpdate={handleTreeUpdate}
+            isAdmin={user?.role === "ADMIN"}
+          />
         ) : (
           <div>Loading family tree...</div>
         )}
@@ -92,7 +117,14 @@ const App = () => {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      <Route path="/" element={<FamilyTreePage />} />
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <FamilyTreePage />
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<Navigate to="/login" />} />
     </Routes>
   );

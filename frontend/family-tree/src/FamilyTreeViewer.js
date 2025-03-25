@@ -18,7 +18,7 @@ import {
 import { transformTree } from "./treeUtils";
 import { initializeChart, configureCard } from "./chartUtils";
 
-const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
+const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
   const containerRef = useRef(null);
   const chartInstanceRef = useRef(null);
   const cardInstanceRef = useRef(null);
@@ -75,21 +75,68 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
           label: "Gender",
           id: "gender",
           options: ["M", "F"],
+          disabled: !isAdmin, // Disable for non-admins
         },
-        { type: "text", label: "First Name", id: "firstName", required: true },
-        { type: "text", label: "Last Name", id: "lastName" },
-        { type: "text", label: "Occupation", id: "occupation" },
-        { type: "number", label: "Age", id: "age" },
-        { type: "date", label: "Birth Date", id: "birthDate" },
-        { type: "date", label: "Death Date", id: "deathDate" },
-        { type: "text", label: "Birth Place", id: "birthPlace" },
-        { type: "text", label: "Death Place", id: "deathPlace" },
-        { type: "checkbox", label: "Has Sub Tree", id: "hasSubTree" },
+        {
+          type: "text",
+          label: "First Name",
+          id: "firstName",
+          required: true,
+          disabled: !isAdmin,
+        },
+        {
+          type: "text",
+          label: "Last Name",
+          id: "lastName",
+          disabled: !isAdmin,
+        },
+        {
+          type: "text",
+          label: "Occupation",
+          id: "occupation",
+          disabled: !isAdmin,
+        },
+        { type: "number", label: "Age", id: "age", disabled: !isAdmin },
+        {
+          type: "date",
+          label: "Birth Date",
+          id: "birthDate",
+          disabled: !isAdmin,
+        },
+        {
+          type: "date",
+          label: "Death Date",
+          id: "deathDate",
+          disabled: !isAdmin,
+        },
+        {
+          type: "text",
+          label: "Birth Place",
+          id: "birthPlace",
+          disabled: !isAdmin,
+        },
+        {
+          type: "text",
+          label: "Death Place",
+          id: "deathPlace",
+          disabled: !isAdmin,
+        },
+        {
+          type: "checkbox",
+          label: "Has Sub Tree",
+          id: "hasSubTree",
+          disabled: !isAdmin,
+        },
       ]);
 
       const originalAddRelative =
         editTreeInstance.addRelative.bind(editTreeInstance);
       editTreeInstance.addRelative = (datum) => {
+        if (!isAdmin) {
+          console.log("Add Relative blocked: User is not an admin");
+          return;
+        }
+
         console.log("=== Add Relative Initiated ===");
         console.log(
           "Datum passed to addRelative:",
@@ -160,6 +207,12 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
       }
 
       editTreeInstance.setOnChange(async () => {
+        if (!isAdmin) {
+          console.log("Tree update blocked: User is not an admin");
+          setError("Only admins can modify the family tree.");
+          return;
+        }
+
         try {
           const updatedData = JSON.parse(editTreeInstance.getDataJson());
           console.log(
@@ -255,7 +308,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
             (node) => !updatedIds.has(node.id)
           );
           console.log("Deleted Nodes:", JSON.stringify(deletedNodes, null, 2));
-          
+
           const idMapping = new Map();
           for (const newNode of newNodes) {
             const relType = newNode._new_rel_data?.rel_type;
@@ -583,11 +636,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
               hasNonRelationshipChanges
             );
 
-            console.log(
-              `Non-relationship changes for ${updatedNode.name} (${updatedNode.id}):`,
-              hasNonRelationshipChanges
-            );
-
             if (hasNonRelationshipChanges) {
               const nodeData = {
                 id: updatedNode.id,
@@ -786,7 +834,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
       console.error("Error rendering FamilyChart:", error);
       setError("Failed to render the family tree.");
     }
-  }, [transformedTree, memoizedOnTreeUpdate]);
+  }, [transformedTree, memoizedOnTreeUpdate, isAdmin]);
 
   if (!transformedTree || transformedTree.length === 0) {
     return <div>No family tree data available.</div>;
@@ -800,6 +848,12 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
       {error && (
         <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>
       )}
+      {!isAdmin && (
+        <div style={{ color: "orange", marginBottom: "10px" }}>
+          You are viewing the family tree in read-only mode. Only admins can
+          modify the tree.
+        </div>
+      )}
       <div ref={containerRef} id="FamilyChart"></div>
     </div>
   );
@@ -808,6 +862,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate }) => {
 FamilyTreeViewer.propTypes = {
   tree: PropTypes.array.isRequired,
   onTreeUpdate: PropTypes.func.isRequired,
+  isAdmin: PropTypes.bool.isRequired,
 };
 
 export default FamilyTreeViewer;
