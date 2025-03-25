@@ -20,6 +20,7 @@
     "react-family-tree": "^1.0.0",
     "react-image-fallback": "^8.0.0",
     "react-image-lightbox": "^5.1.4",
+    "react-router-dom": "^7.4.0",
     "react-scripts": "^4.0.3",
     "react-toastify": "^11.0.5",
     "web-vitals": "^2.1.4"

@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 import FamilyTreeViewer from "./FamilyTreeViewer";
 import { buildTree } from "./treeUtils";
 import { fetchFamilyTree, createPerson } from "./nodeService";
 import { DEFAULT_ME_NODE } from "./constants";
+
+const Login = () => <div>Login Page (To be implemented)</div>;
+const Register = () => <div>Register Page (To be implemented)</div>;
 
 const App = () => {
   const [tree, setTree] = useState([]);
@@ -60,7 +64,7 @@ const App = () => {
     setError(null);
   };
 
-  return (
+  const FamilyTreePage = () => (
     <div style={{ textAlign: "center", padding: "20px" }}>
       {error && (
         <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>
@@ -83,6 +87,15 @@ const App = () => {
         )}
       </div>
     </div>
+  );
+
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/" element={<FamilyTreePage />} />
+      <Route path="*" element={<Navigate to="/login" />} />
+    </Routes>
   );
 };
 
