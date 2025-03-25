@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import FamilyTreeViewer from "./FamilyTreeViewer";
+import Login from "./Login";
+import Register from "./Register";
 import { buildTree } from "./treeUtils";
 import { fetchFamilyTree, createPerson } from "./nodeService";
 import { DEFAULT_ME_NODE } from "./constants";
-
-const Login = () => <div>Login Page (To be implemented)</div>;
-const Register = () => <div>Register Page (To be implemented)</div>;
 
 const App = () => {
   const [tree, setTree] = useState([]);
