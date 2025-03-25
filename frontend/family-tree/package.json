@@ -10,7 +10,7 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.6.0",
     "d3": "^6.7.0",
-    "family-chart": "file:../../../../../family-chart-temp/family-chart-0.2.1.tgz",
+    "family-chart": "file:./vendor/family-chart-0.2.1.tgz",
     "formik": "^2.4.6",
     "pinch-zoom-pan": "^1.0.0",
     "reach": "^1.0.1",
@@ -20,13 +20,13 @@
     "react-family-tree": "^1.0.0",
     "react-image-fallback": "^8.0.0",
     "react-image-lightbox": "^5.1.4",
-    "react-router-dom": "^7.4.0",
+    "react-router-dom": "^6.26.1",
     "react-scripts": "^4.0.3",
     "react-toastify": "^11.0.5",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-app-rewired start",
+    "start": "NODE_OPTIONS=--openssl-legacy-provider react-app-rewired start",
     "build": "react-app-rewired build",
     "test": "react-app-rewired test",
     "eject": "react-scripts eject"
