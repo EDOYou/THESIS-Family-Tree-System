@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import axios from "./axiosInstance";
 import { useAuth } from "./AuthContext";
 
 const Login = () => {
@@ -19,20 +19,35 @@ const Login = () => {
       const authHeader = `Basic ${btoa(
         `${formData.username}:${formData.password}`
       )}`;
-      const response = await axios.get(
-        "http://localhost:8080/api/persons/all",
-        {
-          headers: { Authorization: authHeader },
-        }
-      );
 
-      const userData = { username: formData.username, role: "USER" };
+      await axios.get("/api/persons/all", {
+        headers: { Authorization: authHeader },
+      });
+
+      const userResponse = await axios.get("/api/auth/me", {
+        headers: { Authorization: authHeader },
+      });
+
+      const userData = {
+        username: userResponse.data.username,
+        role: userResponse.data.role,
+      };
+
       login(userData);
       localStorage.setItem("authHeader", authHeader);
+      console.log(
+        "After login - user in localStorage:",
+        localStorage.getItem("user")
+      );
+      console.log(
+        "After login - authHeader in localStorage:",
+        localStorage.getItem("authHeader")
+      );
       setError(null);
       navigate("/");
     } catch (err) {
       setError("Invalid username or password");
+      console.error(err);
     }
   };
 

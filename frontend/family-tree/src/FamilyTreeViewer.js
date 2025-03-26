@@ -25,6 +25,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
   const editTreeInstanceRef = useRef(null);
   const originalTreeRef = useRef([]);
   const [error, setError] = useState(null);
+  const [notification, setNotification] = useState(null);
 
   const transformedTree = useMemo(() => {
     const transformed = transformTree(tree);
@@ -38,6 +39,14 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
     },
     [onTreeUpdate]
   );
+
+  // Function to show a temporary notification
+  const showNotification = (message, type = "error", duration = 3000) => {
+    setNotification({ message, type });
+    setTimeout(() => {
+      setNotification(null);
+    }, duration);
+  };
 
   useEffect(() => {
     if (!transformedTree.length) {
@@ -75,7 +84,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
           label: "Gender",
           id: "gender",
           options: ["M", "F"],
-          disabled: !isAdmin, // Disable for non-admins
+          disabled: !isAdmin,
         },
         {
           type: "text",
@@ -134,6 +143,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
       editTreeInstance.addRelative = (datum) => {
         if (!isAdmin) {
           console.log("Add Relative blocked: User is not an admin");
+          showNotification("Only admins can add relatives to the family tree.");
           return;
         }
 
@@ -209,7 +219,8 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
       editTreeInstance.setOnChange(async () => {
         if (!isAdmin) {
           console.log("Tree update blocked: User is not an admin");
-          setError("Only admins can modify the family tree.");
+          showNotification("Only admins can modify the family tree.");
+          chartInstance.updateData(originalTreeRef.current);
           return;
         }
 
@@ -713,6 +724,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
 
           memoizedOnTreeUpdate();
           setError(null);
+          showNotification("Family tree updated successfully!", "success");
         } catch (error) {
           console.error("Error during tree update:", error);
           setError("Failed to update the tree. Please try again.");
@@ -845,14 +857,35 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
       className="family-tree-container"
       style={{ width: "100%", minHeight: "100vh", position: "relative" }}
     >
-      {error && (
-        <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>
+      {/* Notification for non-admins */}
+      {notification && (
+        <div
+          style={{
+            position: "fixed",
+            top: "20px",
+            right: "20px",
+            padding: "10px 20px",
+            backgroundColor:
+              notification.type === "error" ? "#f44336" : "#4caf50",
+            color: "white",
+            borderRadius: "5px",
+            zIndex: 1000,
+            boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
+          }}
+        >
+          {notification.message}
+        </div>
       )}
+      {/* Persistent message for non-admins */}
       {!isAdmin && (
         <div style={{ color: "orange", marginBottom: "10px" }}>
           You are viewing the family tree in read-only mode. Only admins can
           modify the tree.
         </div>
+      )}
+      {/* Error message for rendering issues */}
+      {error && (
+        <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>
       )}
       <div ref={containerRef} id="FamilyChart"></div>
     </div>

@@ -19,6 +19,14 @@ const App = () => {
 
   const loadTree = async () => {
     try {
+      console.log(
+        "Before fetchFamilyTree - user in localStorage:",
+        localStorage.getItem("user")
+      );
+      console.log(
+        "Before fetchFamilyTree - authHeader in localStorage:",
+        localStorage.getItem("authHeader")
+      );
       const persons = await fetchFamilyTree();
       console.log(
         "Fetched persons from backend:",
@@ -59,6 +67,7 @@ const App = () => {
   };
 
   useEffect(() => {
+    console.log("App useEffect - user from AuthContext:", user);
     if (user) {
       loadTree();
     }

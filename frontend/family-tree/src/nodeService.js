@@ -1,16 +1,10 @@
-import axios from "axios";
+import axios from "./axiosInstance";
 
-const API_URL = "http://localhost:8080/api/persons";
-
-const getAuthHeader = () => {
-  return localStorage.getItem("authHeader") || "";
-};
+const API_URL = "/api/persons";
 
 export const fetchFamilyTree = async () => {
   try {
-    const response = await axios.get(`${API_URL}/all`, {
-      headers: { Authorization: getAuthHeader() },
-    });
+    const response = await axios.get(`${API_URL}/all`);
     if (response.status === 200) {
       if (Array.isArray(response.data)) {
         return response.data;
@@ -43,9 +37,7 @@ export const fetchFamilyTree = async () => {
 export const createPerson = async (personData) => {
   try {
     console.log("Creating person:", personData);
-    const response = await axios.post(API_URL, personData, {
-      headers: { Authorization: getAuthHeader() },
-    });
+    const response = await axios.post(API_URL, personData);
     return response.data;
   } catch (error) {
     console.error("Error creating person:", error);
@@ -59,9 +51,7 @@ export const saveOrUpdateNode = async (nodeData, personId) => {
       throw new Error("Invalid person ID: " + personId);
     }
     console.log("Saving node:", nodeData);
-    const response = await axios.put(`${API_URL}/${personId}`, nodeData, {
-      headers: { Authorization: getAuthHeader() },
-    });
+    const response = await axios.put(`${API_URL}/${personId}`, nodeData);
     return response.data;
   } catch (error) {
     console.error("Error saving node:", error);
@@ -73,10 +63,7 @@ export const addChild = async (personId, childData) => {
   try {
     const response = await axios.post(
       `${API_URL}/${personId}/child`,
-      childData,
-      {
-        headers: { Authorization: getAuthHeader() },
-      }
+      childData
     );
     return response.data;
   } catch (error) {
@@ -90,10 +77,7 @@ export const addSpouse = async (personId, spouseData) => {
     console.log("Inside addSpouse:", personId, spouseData);
     const response = await axios.post(
       `${API_URL}/${personId}/spouse`,
-      spouseData,
-      {
-        headers: { Authorization: getAuthHeader() },
-      }
+      spouseData
     );
     return response.data;
   } catch (error) {
@@ -104,9 +88,7 @@ export const addSpouse = async (personId, spouseData) => {
 
 export const deletePerson = async (personId) => {
   try {
-    const response = await axios.delete(`${API_URL}/${personId}`, {
-      headers: { Authorization: getAuthHeader() },
-    });
+    const response = await axios.delete(`${API_URL}/${personId}`);
     return response.data;
   } catch (error) {
     console.error("Error deleting person:", error);
