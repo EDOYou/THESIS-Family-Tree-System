@@ -125,6 +125,15 @@ export const buildTree = (persons, debug = false) => {
     motherId: person.motherId,
     spouses: person.spouses,
     children: person.children,
+    occupation: person.occupation,
+    age: person.age,
+    birthDate: person.birthDate,
+    deathDate: person.deathDate,
+    birthPlace: person.birthPlace,
+    deathPlace: person.deathPlace,
+    hasSubTree: person.hasSubTree,
+    memoryBoxFilename: person.memoryBoxFilename,
+    memoryBoxContentType: person.memoryBoxContentType,
   }));
 
   logDebug("Built flat tree for react-family-tree:", flatTree, debug);
@@ -149,11 +158,11 @@ export const transformTree = (tree) => {
       const getValidIds = (ids) =>
         (ids || []).filter((id) => id && allIds.has(String(id))).map(String);
 
-      console.log(
-        `Transforming node with ID ${id}:`,
-        JSON.stringify(node, null, 2)
-      );
-      console.log(`allIds:`, Array.from(allIds));
+      // console.log(
+      //   `Transforming node with ID ${id}:`,
+      //   JSON.stringify(node, null, 2)
+      // );
+      // console.log(`allIds:`, Array.from(allIds));
 
       const rels = {
         father:
@@ -168,7 +177,7 @@ export const transformTree = (tree) => {
         children: getValidIds(node.children || []),
       };
 
-      console.log(`rels before filtering:`, JSON.stringify(rels, null, 2));
+      //console.log(`rels before filtering:`, JSON.stringify(rels, null, 2));
 
       rels.spouses = rels.spouses.filter(
         (spouseId) => !rels.children.includes(spouseId)
@@ -177,7 +186,7 @@ export const transformTree = (tree) => {
         (childId) => !rels.spouses.includes(childId)
       );
 
-      console.log(`rels after filtering:`, JSON.stringify(rels, null, 2));
+      //console.log(`rels after filtering:`, JSON.stringify(rels, null, 2));
 
       const genderValue = node.gender ? node.gender.toUpperCase() : "unknown";
       const normalizedGender =
@@ -213,10 +222,10 @@ export const transformTree = (tree) => {
         rels,
       };
 
-      console.log(
-        `Transformed node with ID ${id}:`,
-        JSON.stringify(transformedNode, null, 2)
-      );
+      // console.log(
+      //   `Transformed node with ID ${id}:`,
+      //   JSON.stringify(transformedNode, null, 2)
+      // );
 
       return transformedNode;
     });

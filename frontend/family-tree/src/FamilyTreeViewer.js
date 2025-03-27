@@ -100,105 +100,16 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
       console.log("EditTreeInstance initialized:", editTreeInstance);
 
       const allFields = [
-        {
-          type: "switch",
-          label: "Gender",
-          id: "gender",
-          options: ["M", "F"],
-          disabled: !isAdmin,
-        },
-        {
-          type: "text",
-          label: "First Name",
-          id: "firstName",
-          required: true,
-          disabled: !isAdmin,
-        },
-        {
-          type: "text",
-          label: "Last Name",
-          id: "lastName",
-          disabled: !isAdmin,
-        },
-        {
-          type: "text",
-          label: "Occupation",
-          id: "occupation",
-          disabled: !isAdmin,
-        },
-        { type: "number", label: "Age", id: "age", disabled: !isAdmin },
-        {
-          type: "date",
-          label: "Birth Date",
-          id: "birthDate",
-          disabled: !isAdmin,
-        },
-        {
-          type: "date",
-          label: "Death Date",
-          id: "deathDate",
-          disabled: !isAdmin,
-        },
-        {
-          type: "text",
-          label: "Birth Place",
-          id: "birthPlace",
-          disabled: !isAdmin,
-        },
-        {
-          type: "text",
-          label: "Death Place",
-          id: "deathPlace",
-          disabled: !isAdmin,
-        },
-        {
-          type: "checkbox",
-          label: "Has Sub Tree",
-          id: "hasSubTree",
-          disabled: !isAdmin,
-        },
-        {
-          type: "custom",
-          label: "Memory Box",
-          id: "memoryBox",
-          render: (datum, updateDatum) => {
-            const hasAttachment = datum.data.memoryBoxFilename;
-            return (
-              <div>
-                {isAdmin && (
-                  <input
-                    type="file"
-                    onChange={(e) => {
-                      const file = e.target.files[0];
-                      if (file) {
-                        uploadMemoryBox(datum.id, file);
-                        updateDatum({
-                          ...datum,
-                          data: {
-                            ...datum.data,
-                            memoryBoxFilename: file.name,
-                            memoryBoxContentType: file.type,
-                          },
-                        });
-                      }
-                    }}
-                    disabled={!isAdmin}
-                  />
-                )}
-                {hasAttachment && (
-                  <a
-                    href={`/api/persons/${datum.id}/memory-box`}
-                    download={datum.data.memoryBoxFilename}
-                    style={{ marginLeft: "10px" }}
-                  >
-                    Download {datum.data.memoryBoxFilename}
-                  </a>
-                )}
-              </div>
-            );
-          },
-          disabled: !isAdmin,
-        },
+        { type: "text", label: "First Name", id: "firstName" },
+        { type: "text", label: "Last Name", id: "lastName" },
+        { type: "text", label: "Occupation", id: "occupation" },
+        { type: "text", label: "Age", id: "age" },
+        { type: "text", label: "Birth Date", id: "birthDate" },
+        { type: "text", label: "Death Date", id: "deathDate" },
+        { type: "text", label: "Birth Place", id: "birthPlace" },
+        { type: "text", label: "Death Place", id: "deathPlace" },
+        { type: "text", label: "Has Sub Tree", id: "hasSubTree" },
+        { type: "text", label: "Memory Box", id: "memoryBox" },
       ];
 
       editTreeInstance.setFields(allFields);
@@ -674,12 +585,12 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                 lastName: node.name.split(" ").slice(1).join(" ") || "",
                 occupation: node.occupation,
                 age: node.age,
-                birthDate: node.birthDate,
-                deathDate: node.deathDate,
-                birthPlace: node.birthPlace,
-                deathPlace: node.deathPlace,
-                hasSubTree: node.hasSubTree,
-                memoryBoxFilename: node.memoryBoxFilename,
+                "birth date": node.birthDate,
+                "death date": node.deathDate,
+                "birth place": node.birthPlace,
+                "death place": node.deathPlace,
+                "has sub tree": node.hasSubTree,
+                "memory box filename": node.memoryBoxFilename,
                 memoryBoxContentType: node.memoryBoxContentType,
               },
               rels: {

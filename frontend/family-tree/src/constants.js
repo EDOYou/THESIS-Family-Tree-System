@@ -23,8 +23,8 @@ export const ERROR_MESSAGES = {
 };
 
 export const CHART_DIMENSIONS = {
-  width: 1100,
-  height: 900,
+  width: 1200,
+  height: 800,
 };
 
 export const CARD_DIMENSIONS = {

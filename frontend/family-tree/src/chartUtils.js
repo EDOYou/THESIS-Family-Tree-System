@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import f3 from "family-chart/dist/family-chart.esm.js";
+import f3 from "family-chart";
 import { CHART_DIMENSIONS, CARD_DIMENSIONS } from "./constants";
 
 export const initializeChart = (
@@ -50,20 +50,20 @@ export const configureCard = (cardInstance) => {
       const cardNode = d3.select(this);
       const name = d.data?.data?.name || "Unnamed";
 
-      let textElement = cardNode.select(".card-inner text");
+      const textElement = cardNode.select(".card-inner text");
       if (textElement.empty()) {
         console.warn("No text element found inside .card-inner, creating one");
-        textElement = cardNode
+        cardNode
           .select(".card-inner")
           .append("text")
           .attr("x", 10)
           .attr("y", 20)
-          .attr("fill", "#fff");
+          .attr("fill", "#fff")
+          .text(name);
+      } else {
+        textElement.text(name);
       }
-      textElement.text(name);
     };
-
-    cardInstance.setCardDim(CARD_DIMENSIONS);
   } catch (error) {
     console.error("Error configuring card:", error);
     throw error;
