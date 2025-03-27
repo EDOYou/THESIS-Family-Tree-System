@@ -10,7 +10,7 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.6.0",
     "d3": "^6.7.0",
-    "family-chart": "file:./vendor/family-chart-0.2.1.tgz",
+    "family-chart": "0.2.1",
     "formik": "^2.4.6",
     "pinch-zoom-pan": "^1.0.0",
     "reach": "^1.0.1",

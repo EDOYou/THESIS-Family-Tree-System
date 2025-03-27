@@ -17,6 +17,8 @@ import {
 } from "./nodeService";
 import { transformTree } from "./treeUtils";
 import { initializeChart, configureCard } from "./chartUtils";
+import axios from "./axiosInstance";
+import f3 from "family-chart";
 
 const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
   const containerRef = useRef(null);
@@ -40,12 +42,31 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
     [onTreeUpdate]
   );
 
-  // Function to show a temporary notification
   const showNotification = (message, type = "error", duration = 3000) => {
     setNotification({ message, type });
     setTimeout(() => {
       setNotification(null);
     }, duration);
+  };
+
+  const uploadMemoryBox = async (personId, file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const response = await axios.post(
+        `/api/persons/${personId}/memory-box`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+      console.log("Memory Box uploaded:", response.data);
+      onTreeUpdate();
+      showNotification("Memory Box uploaded successfully!", "success");
+    } catch (error) {
+      console.error("Error uploading Memory Box:", error);
+      showNotification("Failed to upload Memory Box.", "error");
+    }
   };
 
   useEffect(() => {
@@ -78,7 +99,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
 
       console.log("EditTreeInstance initialized:", editTreeInstance);
 
-      editTreeInstance.setFields([
+      const allFields = [
         {
           type: "switch",
           label: "Gender",
@@ -136,10 +157,60 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
           id: "hasSubTree",
           disabled: !isAdmin,
         },
-      ]);
+        {
+          type: "custom",
+          label: "Memory Box",
+          id: "memoryBox",
+          render: (datum, updateDatum) => {
+            const hasAttachment = datum.data.memoryBoxFilename;
+            return (
+              <div>
+                {isAdmin && (
+                  <input
+                    type="file"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        uploadMemoryBox(datum.id, file);
+                        updateDatum({
+                          ...datum,
+                          data: {
+                            ...datum.data,
+                            memoryBoxFilename: file.name,
+                            memoryBoxContentType: file.type,
+                          },
+                        });
+                      }
+                    }}
+                    disabled={!isAdmin}
+                  />
+                )}
+                {hasAttachment && (
+                  <a
+                    href={`/api/persons/${datum.id}/memory-box`}
+                    download={datum.data.memoryBoxFilename}
+                    style={{ marginLeft: "10px" }}
+                  >
+                    Download {datum.data.memoryBoxFilename}
+                  </a>
+                )}
+              </div>
+            );
+          },
+          disabled: !isAdmin,
+        },
+      ];
 
-      const originalAddRelative =
-        editTreeInstance.addRelative.bind(editTreeInstance);
+      editTreeInstance.setFields(allFields);
+      editTreeInstance.setEditFirst(true);
+      editTreeInstance.setAddRelLabels({
+        father: "Add Father",
+        mother: "Add Mother",
+        spouse: "Add Spouse",
+        son: "Add Son",
+        daughter: "Add Daughter",
+      });
+
       editTreeInstance.addRelative = (datum) => {
         if (!isAdmin) {
           console.log("Add Relative blocked: User is not an admin");
@@ -152,64 +223,84 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
           "Datum passed to addRelative:",
           JSON.stringify(datum, null, 2)
         );
-        console.log("Current AddRelativeInstance state:", {
-          is_active: editTreeInstance.addRelativeInstance.is_active,
-          datum: editTreeInstance.addRelativeInstance.datum,
-          store_data_length:
-            editTreeInstance.addRelativeInstance.store_data?.length || "N/A",
-        });
 
         if (editTreeInstance.isAddingRelative()) {
           console.log("AddRelative is active, cancelling previous action...");
           const addRelativeInstance = editTreeInstance.addRelativeInstance;
-          if (addRelativeInstance) {
-            if (typeof addRelativeInstance.onCancel === "function") {
-              console.log("Calling onCancel to reset AddRelative...");
-              addRelativeInstance.onCancel();
-              console.log("After onCancel - AddRelativeInstance state:", {
-                is_active: addRelativeInstance.is_active,
-                datum: addRelativeInstance.datum,
-                store_data_length:
-                  addRelativeInstance.store_data?.length || "N/A",
-              });
-            } else {
-              console.warn(
-                "onCancel is not a function, performing manual reset..."
-              );
-              addRelativeInstance.is_active = false;
-              addRelativeInstance.store_data = null;
-              addRelativeInstance.datum = null;
-              addRelativeInstance.onChange = null;
-              addRelativeInstance.onCancel = null;
-              editTreeInstance.store.updateTree({});
-              console.log("After manual reset - AddRelativeInstance state:", {
-                is_active: addRelativeInstance.is_active,
-                datum: addRelativeInstance.datum,
-                store_data_length:
-                  addRelativeInstance.store_data?.length || "N/A",
-              });
-            }
+          if (
+            addRelativeInstance &&
+            typeof addRelativeInstance.onCancel === "function"
+          ) {
+            addRelativeInstance.onCancel();
+          } else {
+            console.warn(
+              "onCancel is not a function, performing manual reset..."
+            );
+            addRelativeInstance.is_active = false;
+            addRelativeInstance.store_data = null;
+            addRelativeInstance.datum = null;
+            addRelativeInstance.onChange = null;
+            addRelativeInstance.onCancel = null;
+            editTreeInstance.store.updateTree({});
           }
-        } else {
-          console.log("No active AddRelative action, proceeding directly...");
         }
 
-        console.log(
-          "Calling original addRelative with datum:",
-          JSON.stringify(datum, null, 2)
-        );
-        originalAddRelative(datum);
-        console.log("After addRelative - AddRelativeInstance state:", {
-          is_active: editTreeInstance.addRelativeInstance.is_active,
-          datum: editTreeInstance.addRelativeInstance.datum,
-          store_data_length:
-            editTreeInstance.addRelativeInstance.store_data?.length || "N/A",
+        const relTypes = ["father", "mother", "spouse", "son", "daughter"];
+        const formCreator = f3.handlers.createForm({
+          store: editTreeInstance.store,
+          datum: { id: "rel-type-selector", data: {} },
+          fields: [
+            {
+              type: "select",
+              label: "Relationship Type",
+              id: "relType",
+              options: relTypes.map((type) => ({
+                value: type,
+                label: type.charAt(0).toUpperCase() + type.slice(1),
+              })),
+              required: true,
+            },
+          ],
+          postSubmit: (e) => {
+            const formData = new FormData(e.target);
+            const relType = formData.get("relType");
+            if (relType) {
+              const defaultGender =
+                relType === "father" || relType === "son" ? "M" : "F";
+              const tempDatum = {
+                ...datum,
+                data: {
+                  ...datum.data,
+                  gender: defaultGender,
+                },
+              };
+              editTreeInstance.addRelativeInstance.activate(tempDatum, relType);
+            }
+          },
+          onCancel: () => {
+            const formContainer = document.querySelector(".f3-form-cont");
+            if (formContainer) {
+              d3.select(formContainer).classed("opened", false).html("");
+            }
+          },
         });
-        console.log("=== Add Relative Setup Complete ===");
+
+        const formCont = f3.handlers.formInfoSetup(formCreator, () => {
+          const formContainer = document.querySelector(".f3-form-cont");
+          if (formContainer) {
+            d3.select(formContainer).classed("opened", false).html("");
+          }
+        });
+
+        const formContainer = document.querySelector(".f3-form-cont");
+        if (formContainer) {
+          formContainer.innerHTML = "";
+          formContainer.appendChild(formCont);
+          d3.select(formContainer).classed("opened", true);
+        }
       };
 
       editTreeInstance.setCardClickOpen(cardInstance);
-      console.log("setCardClickOpen called");
       editTreeInstance.fixed();
 
       if (transformedTree.length > 0) {
@@ -236,7 +327,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
               [node.data.firstName, node.data.lastName]
                 .filter(Boolean)
                 .join(" ") || "Unnamed";
-
             return {
               id: node.id,
               gender: node.data.gender,
@@ -252,19 +342,10 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
               motherId: node.rels.mother || null,
               spouses: node.rels.spouses || [],
               children: node.rels.children || [],
-              _new_rel_data: node._new_rel_data,
+              memoryBoxFilename: node.data.memoryBoxFilename || null,
+              memoryBoxContentType: node.data.memoryBoxContentType || null,
             };
           });
-
-          console.log(
-            "Updated Tree (before backend sync):",
-            JSON.stringify(updatedTree, null, 2)
-          );
-
-          console.log(
-            "Original Tree State (originalTreeRef.current):",
-            JSON.stringify(originalTreeRef.current, null, 2)
-          );
 
           const transformedOriginalTree = originalTreeRef.current.map(
             (node) => {
@@ -273,7 +354,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                   [node.data.firstName, node.data.lastName]
                     .filter(Boolean)
                     .join(" ") || "Unnamed";
-
                 return {
                   id: node.id,
                   gender: node.data.gender || null,
@@ -295,30 +375,16 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
             }
           );
 
-          console.log(
-            "Transformed Original Tree for comparison:",
-            JSON.stringify(transformedOriginalTree, null, 2)
-          );
-
           const originalIds = new Set(
             transformedOriginalTree.map((node) => node.id)
           );
-          console.log("Original IDs in transformedOriginalTree:", [
-            ...originalIds,
-          ]);
-
           const updatedIds = new Set(updatedTree.map((node) => node.id));
-          console.log("Updated IDs in updatedTree:", [...updatedIds]);
-
           const newNodes = updatedTree.filter(
             (node) => !originalIds.has(node.id)
           );
-          console.log("New Nodes:", JSON.stringify(newNodes, null, 2));
-
           const deletedNodes = transformedOriginalTree.filter(
             (node) => !updatedIds.has(node.id)
           );
-          console.log("Deleted Nodes:", JSON.stringify(deletedNodes, null, 2));
 
           const idMapping = new Map();
           for (const newNode of newNodes) {
@@ -346,15 +412,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                   spouses: newNode.spouses,
                   children: newNode.children,
                 };
-                console.log(
-                  "Adding new spouse with data:",
-                  JSON.stringify(spouseData, null, 2)
-                );
                 const createdSpouse = await addSpouse(spouseId, spouseData);
-                console.log(
-                  "Created spouse response:",
-                  JSON.stringify(createdSpouse, null, 2)
-                );
                 idMapping.set(newNode.id, createdSpouse.id.toString());
 
                 const spouseNodeInOriginal = transformedOriginalTree.find(
@@ -410,15 +468,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                     spouses: newNode.spouses,
                     children: newNode.children,
                   };
-                  console.log(
-                    "Adding new child with data:",
-                    JSON.stringify(childData, null, 2)
-                  );
                   const createdChild = await addChild(parentId, childData);
-                  console.log(
-                    "Created child response:",
-                    JSON.stringify(createdChild, null, 2)
-                  );
                   idMapping.set(newNode.id, createdChild.id.toString());
                   continue;
                 }
@@ -439,15 +489,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                 spouses: newNode.spouses,
                 children: newNode.children,
               };
-              console.log(
-                "Creating new node with data:",
-                JSON.stringify(nodeData, null, 2)
-              );
               const createdNode = await createPerson(nodeData);
-              console.log(
-                "Created node response:",
-                JSON.stringify(createdNode, null, 2)
-              );
               idMapping.set(newNode.id, createdNode.id.toString());
             } catch (error) {
               console.error(
@@ -471,17 +513,9 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
             ),
           }));
 
-          console.log(
-            "Updated Tree with Real IDs:",
-            JSON.stringify(updatedTreeWithRealIds, null, 2)
-          );
-
           let updatedNodes = [];
           for (const node of updatedTreeWithRealIds) {
             if (!originalIds.has(node.id)) {
-              console.log(
-                `Node ${node.name} (${node.id}) is a new node, skipping update check.`
-              );
               continue;
             }
             const originalNode = transformedOriginalTree.find(
@@ -519,64 +553,31 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
             };
             const isUpdated =
               JSON.stringify(originalSubset) !== JSON.stringify(updatedSubset);
-            console.log(`Comparing node ${node.name} (${node.id}):`);
-            console.log("Original:", JSON.stringify(originalSubset, null, 2));
-            console.log("Updated:", JSON.stringify(updatedSubset, null, 2));
-            console.log(
-              `Is node ${node.name} (${node.id}) updated? ${isUpdated}`
-            );
             if (isUpdated) {
               updatedNodes.push(node);
             }
           }
-          console.log("Updated Nodes:", JSON.stringify(updatedNodes, null, 2));
 
           for (const updatedNode of updatedNodes) {
             const originalNode = transformedOriginalTree.find(
               (n) => n.id === updatedNode.id
             );
-
             const originalSpouses = originalNode.spouses || [];
             const updatedSpouses = updatedNode.spouses || [];
             const addedSpouses = updatedSpouses.filter(
               (spouseId) => !originalSpouses.includes(spouseId)
             );
 
-            console.log(
-              `Processing updated node ${updatedNode.name} (${updatedNode.id}):`,
-              JSON.stringify(updatedNode, null, 2)
-            );
-            console.log(
-              `Original spouses for ${updatedNode.name}:`,
-              originalSpouses
-            );
-            console.log(
-              `Updated spouses for ${updatedNode.name}:`,
-              updatedSpouses
-            );
-            console.log(`Added spouses for ${updatedNode.name}:`, addedSpouses);
-
             for (const spouseId of addedSpouses) {
               const spouseNode = updatedTreeWithRealIds.find(
                 (node) => node.id === spouseId
-              );
-              console.log(
-                `Processing spouse ${spouseId} for ${updatedNode.name}:`,
-                spouseNode ? JSON.stringify(spouseNode, null, 2) : "Not found"
               );
               if (spouseNode) {
                 const spouseOriginalNode = transformedOriginalTree.find(
                   (n) => n.id === spouseId
                 );
                 const spouseOriginalSpouses = spouseOriginalNode?.spouses || [];
-                console.log(
-                  `Original spouses for spouse ${spouseNode.name} (${spouseId}):`,
-                  spouseOriginalSpouses
-                );
                 if (spouseOriginalSpouses.includes(updatedNode.id)) {
-                  console.log(
-                    `Skipping linking ${spouseNode.name} to ${updatedNode.name}: already linked in original tree`
-                  );
                   continue;
                 }
 
@@ -596,34 +597,22 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                   spouses: updatedNode.spouses,
                   children: updatedNode.children,
                 };
-                console.log(
-                  `Linking ${updatedNode.name} as spouse to ${spouseNode.name}:`,
-                  JSON.stringify(spouseData, null, 2)
+                await addSpouse(spouseId, spouseData);
+                originalNode.spouses = originalNode.spouses || [];
+                if (!originalNode.spouses.includes(spouseId)) {
+                  originalNode.spouses.push(spouseId);
+                }
+                const spouseInOriginalUpdated = transformedOriginalTree.find(
+                  (n) => n.id === spouseId
                 );
-                try {
-                  await addSpouse(spouseId, spouseData);
-                  originalNode.spouses = originalNode.spouses || [];
-                  if (!originalNode.spouses.includes(spouseId)) {
-                    originalNode.spouses.push(spouseId);
+                if (spouseInOriginalUpdated) {
+                  spouseInOriginalUpdated.spouses =
+                    spouseInOriginalUpdated.spouses || [];
+                  if (
+                    !spouseInOriginalUpdated.spouses.includes(updatedNode.id)
+                  ) {
+                    spouseInOriginalUpdated.spouses.push(updatedNode.id);
                   }
-                  const spouseInOriginalUpdated = transformedOriginalTree.find(
-                    (n) => n.id === spouseId
-                  );
-                  if (spouseInOriginalUpdated) {
-                    spouseInOriginalUpdated.spouses =
-                      spouseInOriginalUpdated.spouses || [];
-                    if (
-                      !spouseInOriginalUpdated.spouses.includes(updatedNode.id)
-                    ) {
-                      spouseInOriginalUpdated.spouses.push(updatedNode.id);
-                    }
-                  }
-                } catch (error) {
-                  console.error(
-                    `Failed to link ${updatedNode.name} to ${spouseNode.name}:`,
-                    error.response?.data || error.message
-                  );
-                  throw error;
                 }
               }
             }
@@ -642,11 +631,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                 updatedNode.fatherId !== originalNode.fatherId ||
                 updatedNode.motherId !== originalNode.motherId);
 
-            console.log(
-              `Non-relationship changes for ${updatedNode.name} (${updatedNode.id}):`,
-              hasNonRelationshipChanges
-            );
-
             if (hasNonRelationshipChanges) {
               const nodeData = {
                 id: updatedNode.id,
@@ -664,10 +648,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                 spouses: updatedNode.spouses,
                 children: updatedNode.children,
               };
-              console.log(
-                "Saving updated node with data:",
-                JSON.stringify(nodeData, null, 2)
-              );
               await saveOrUpdateNode(nodeData, updatedNode.id);
             }
           }
@@ -699,6 +679,8 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                 birthPlace: node.birthPlace,
                 deathPlace: node.deathPlace,
                 hasSubTree: node.hasSubTree,
+                memoryBoxFilename: node.memoryBoxFilename,
+                memoryBoxContentType: node.memoryBoxContentType,
               },
               rels: {
                 father: sanitizeRel(node.fatherId),
@@ -709,19 +691,8 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
             };
           });
 
-          console.log(
-            "Final Tree after backend sync:",
-            JSON.stringify(finalTree, null, 2)
-          );
-
           chartInstance.updateData(finalTree);
-
           originalTreeRef.current = updatedTreeWithRealIds;
-          console.log(
-            "Updated originalTreeRef.current after sync:",
-            JSON.stringify(originalTreeRef.current, null, 2)
-          );
-
           memoizedOnTreeUpdate();
           setError(null);
           showNotification("Family tree updated successfully!", "success");
@@ -767,7 +738,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
             [node.data.firstName, node.data.lastName]
               .filter(Boolean)
               .join(" ") || "Unnamed";
-
           return {
             id: node.id,
             gender: node.data.gender || null,
@@ -785,16 +755,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
             children: node.rels.children || [],
           };
         });
-
-        console.log(
-          "Initialized originalTreeRef.current:",
-          JSON.stringify(originalTreeRef.current, null, 2)
-        );
-      } else {
-        console.log(
-          "originalTreeRef.current already initialized, skipping re-initialization:",
-          JSON.stringify(originalTreeRef.current, null, 2)
-        );
       }
 
       return () => {
@@ -805,9 +765,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
         ) {
           try {
             if (editTreeInstanceRef.current.isAddingRelative()) {
-              console.log(
-                "AddRelative is active during cleanup, cancelling..."
-              );
               const addRelativeInstance =
                 editTreeInstanceRef.current.addRelativeInstance;
               if (
@@ -816,9 +773,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
               ) {
                 addRelativeInstance.onCancel();
               } else {
-                console.warn(
-                  "onCancel is not a function during cleanup, performing manual reset..."
-                );
                 if (addRelativeInstance) {
                   addRelativeInstance.is_active = false;
                   addRelativeInstance.store_data = null;
@@ -830,17 +784,14 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
               }
             }
             editTreeInstanceRef.current.destroy();
-            console.log("EditTreeInstance destroyed.");
           } catch (error) {
             console.error("Error destroying editTreeInstance:", error);
           }
         }
         if (chartInstance && typeof chartInstance.destroy === "function") {
           chartInstance.destroy();
-          console.log("ChartInstance destroyed.");
         }
         d3.select(currentContainer).selectAll("*").remove();
-        console.log("Container cleared.");
       };
     } catch (error) {
       console.error("Error rendering FamilyChart:", error);
@@ -857,7 +808,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
       className="family-tree-container"
       style={{ width: "100%", minHeight: "100vh", position: "relative" }}
     >
-      {/* Notification for non-admins */}
       {notification && (
         <div
           style={{
@@ -876,14 +826,12 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
           {notification.message}
         </div>
       )}
-      {/* Persistent message for non-admins */}
       {!isAdmin && (
         <div style={{ color: "orange", marginBottom: "10px" }}>
           You are viewing the family tree in read-only mode. Only admins can
           modify the tree.
         </div>
       )}
-      {/* Error message for rendering issues */}
       {error && (
         <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>
       )}

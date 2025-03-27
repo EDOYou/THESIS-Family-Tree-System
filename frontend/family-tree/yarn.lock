@@ -5546,9 +5546,10 @@ extglob@^2.0.4:
     snapdragon "^0.8.1"
     to-regex "^3.0.1"
 
-"family-chart@file:./vendor/family-chart-0.2.1.tgz":
+family-chart@0.2.1:
   version "0.2.1"
-  resolved "file:./vendor/family-chart-0.2.1.tgz#a1b9ae5b4846d1b9244d4116aadabc6caeac839d"
+  resolved "https://registry.yarnpkg.com/family-chart/-/family-chart-0.2.1.tgz#8c4bc4248e883c71843cca20d2a5c8e96d4ddcff"
+  integrity sha512-lB8dOg8Mll/PVfSR7wTG+mP/nk6fxbY+3paEGsr85xRKGJMIsC3Va9/D2J5QOVSk67nikur/MiTFnGeLS7kT2Q==
   dependencies:
     d3 "6"
 

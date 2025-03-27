@@ -207,6 +207,8 @@ export const transformTree = (tree) => {
           birthPlace: mapEmptyToNull(node.birthPlace),
           deathPlace: mapEmptyToNull(node.deathPlace),
           hasSubTree: node.hasSubTree || false,
+          memoryBoxFilename: mapEmptyToNull(node.memoryBoxFilename),
+          memoryBoxContentType: mapEmptyToNull(node.memoryBoxContentType),
         },
         rels,
       };

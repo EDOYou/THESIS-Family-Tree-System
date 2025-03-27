@@ -57,6 +57,15 @@ public class Person {
     @Column(name = "child_id")
     private List<String> children = new ArrayList<>();
 
+    @Column(name = "memory_box_file", columnDefinition = "BYTEA")
+    private byte[] memoryBoxFile;
+
+    @Column(name = "memory_box_filename")
+    private String memoryBoxFilename;
+
+    @Column(name = "memory_box_content_type")
+    private String memoryBoxContentType;
+
     public Person() {}
 
     public Person(String id, String name, Integer age, Gender gender) {

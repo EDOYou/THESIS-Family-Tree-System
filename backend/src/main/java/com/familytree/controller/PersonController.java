@@ -5,10 +5,14 @@ import com.familytree.model.Person;
 import com.familytree.model.dto.PersonDTO;
 import com.familytree.repository.PersonRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -166,6 +170,42 @@ public class PersonController {
                     }
                     personRepository.delete(person);
                     return ResponseEntity.ok().build();
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/{personId}/memory-box")
+    public ResponseEntity<PersonDTO> uploadMemoryBox(
+            @PathVariable String personId,
+            @RequestParam("file") MultipartFile file) throws IOException {
+        return personRepository.findById(personId)
+                .map(person -> {
+                    try {
+                        person.setMemoryBoxFile(file.getBytes());
+                        person.setMemoryBoxFilename(file.getOriginalFilename());
+                        person.setMemoryBoxContentType(file.getContentType());
+                        Person savedPerson = personRepository.save(person);
+                        return ResponseEntity.ok(new PersonDTO(savedPerson));
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to upload file", e);
+                    }
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{personId}/memory-box")
+    public ResponseEntity<?> getMemoryBox(@PathVariable String personId) {
+        return personRepository.findById(personId)
+                .map(person -> {
+                    if (person.getMemoryBoxFile() == null) {
+                        return ResponseEntity.noContent().build();
+                    }
+                    HttpHeaders headers = new HttpHeaders();
+                    headers.setContentType(MediaType.parseMediaType(person.getMemoryBoxContentType()));
+                    headers.setContentDispositionFormData("attachment", person.getMemoryBoxFilename());
+                    return ResponseEntity.ok()
+                            .headers(headers)
+                            .body(person.getMemoryBoxFile());
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
