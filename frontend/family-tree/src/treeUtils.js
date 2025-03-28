@@ -132,8 +132,7 @@ export const buildTree = (persons, debug = false) => {
     birthPlace: person.birthPlace,
     deathPlace: person.deathPlace,
     hasSubTree: person.hasSubTree,
-    memoryBoxFilename: person.memoryBoxFilename,
-    memoryBoxContentType: person.memoryBoxContentType,
+    avatar: person.avatar,
   }));
 
   logDebug("Built flat tree for react-family-tree:", flatTree, debug);
@@ -158,12 +157,6 @@ export const transformTree = (tree) => {
       const getValidIds = (ids) =>
         (ids || []).filter((id) => id && allIds.has(String(id))).map(String);
 
-      // console.log(
-      //   `Transforming node with ID ${id}:`,
-      //   JSON.stringify(node, null, 2)
-      // );
-      // console.log(`allIds:`, Array.from(allIds));
-
       const rels = {
         father:
           node.fatherId && allIds.has(String(node.fatherId))
@@ -177,16 +170,12 @@ export const transformTree = (tree) => {
         children: getValidIds(node.children || []),
       };
 
-      //console.log(`rels before filtering:`, JSON.stringify(rels, null, 2));
-
       rels.spouses = rels.spouses.filter(
         (spouseId) => !rels.children.includes(spouseId)
       );
       rels.children = rels.children.filter(
         (childId) => !rels.spouses.includes(childId)
       );
-
-      //console.log(`rels after filtering:`, JSON.stringify(rels, null, 2));
 
       const genderValue = node.gender ? node.gender.toUpperCase() : "unknown";
       const normalizedGender =
@@ -216,16 +205,10 @@ export const transformTree = (tree) => {
           birthPlace: mapEmptyToNull(node.birthPlace),
           deathPlace: mapEmptyToNull(node.deathPlace),
           hasSubTree: node.hasSubTree || false,
-          memoryBoxFilename: mapEmptyToNull(node.memoryBoxFilename),
-          memoryBoxContentType: mapEmptyToNull(node.memoryBoxContentType),
+          avatar: mapEmptyToNull(node.avatar),
         },
         rels,
       };
-
-      // console.log(
-      //   `Transformed node with ID ${id}:`,
-      //   JSON.stringify(transformedNode, null, 2)
-      // );
 
       return transformedNode;
     });

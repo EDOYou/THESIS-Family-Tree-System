@@ -95,3 +95,21 @@ export const deletePerson = async (personId) => {
     throw new Error("Failed to delete person: " + error.message);
   }
 };
+
+export const updateAvatar = async (personId, avatarUrl) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/${personId}/avatar`,
+      avatarUrl,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error updating avatar:", error);
+    throw new Error("Failed to update avatar: " + error.message);
+  }
+};

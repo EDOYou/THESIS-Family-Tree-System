@@ -14,10 +14,10 @@ import {
   addChild,
   addSpouse,
   deletePerson,
+  updateAvatar,
 } from "./nodeService";
 import { transformTree } from "./treeUtils";
 import { initializeChart, configureCard } from "./chartUtils";
-import axios from "./axiosInstance";
 import f3 from "family-chart";
 
 const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
@@ -31,7 +31,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
 
   const transformedTree = useMemo(() => {
     const transformed = transformTree(tree);
-    console.log("Transformed Tree Data:", transformed);
+    console.log("Transformed Tree Data:", JSON.stringify(transformed, null, 2));
     return transformed;
   }, [tree]);
 
@@ -47,26 +47,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
     setTimeout(() => {
       setNotification(null);
     }, duration);
-  };
-
-  const uploadMemoryBox = async (personId, file) => {
-    const formData = new FormData();
-    formData.append("file", file);
-    try {
-      const response = await axios.post(
-        `/api/persons/${personId}/memory-box`,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
-      console.log("Memory Box uploaded:", response.data);
-      onTreeUpdate();
-      showNotification("Memory Box uploaded successfully!", "success");
-    } catch (error) {
-      console.error("Error uploading Memory Box:", error);
-      showNotification("Failed to upload Memory Box.", "error");
-    }
   };
 
   useEffect(() => {
@@ -109,7 +89,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
         { type: "text", label: "Birth Place", id: "birthPlace" },
         { type: "text", label: "Death Place", id: "deathPlace" },
         { type: "text", label: "Has Sub Tree", id: "hasSubTree" },
-        { type: "text", label: "Memory Box", id: "memoryBox" },
+        { type: "text", label: "Avatar URL", id: "avatar" },
       ];
 
       editTreeInstance.setFields(allFields);
@@ -249,12 +229,11 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
               birthPlace: node.data.birthPlace || null,
               deathPlace: node.data.deathPlace || null,
               hasSubTree: node.data.hasSubTree || false,
+              avatar: node.data.avatar || null,
               fatherId: node.rels.father || null,
               motherId: node.rels.mother || null,
               spouses: node.rels.spouses || [],
               children: node.rels.children || [],
-              memoryBoxFilename: node.data.memoryBoxFilename || null,
-              memoryBoxContentType: node.data.memoryBoxContentType || null,
             };
           });
 
@@ -276,6 +255,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                   birthPlace: node.data.birthPlace || null,
                   deathPlace: node.data.deathPlace || null,
                   hasSubTree: node.data.hasSubTree || false,
+                  avatar: node.data.avatar || null,
                   fatherId: node.rels.father || null,
                   motherId: node.rels.mother || null,
                   spouses: node.rels.spouses || [],
@@ -322,6 +302,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                   motherId: newNode.motherId,
                   spouses: newNode.spouses,
                   children: newNode.children,
+                  avatar: newNode.avatar,
                 };
                 const createdSpouse = await addSpouse(spouseId, spouseData);
                 idMapping.set(newNode.id, createdSpouse.id.toString());
@@ -349,6 +330,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                   birthPlace: newNode.birthPlace,
                   deathPlace: newNode.deathPlace,
                   hasSubTree: newNode.hasSubTree,
+                  avatar: newNode.avatar,
                   fatherId: newNode.fatherId,
                   motherId: newNode.motherId,
                   spouses: newNode.spouses,
@@ -378,6 +360,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                     motherId: newNode.motherId,
                     spouses: newNode.spouses,
                     children: newNode.children,
+                    avatar: newNode.avatar,
                   };
                   const createdChild = await addChild(parentId, childData);
                   idMapping.set(newNode.id, createdChild.id.toString());
@@ -399,6 +382,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                 motherId: newNode.motherId,
                 spouses: newNode.spouses,
                 children: newNode.children,
+                avatar: newNode.avatar,
               };
               const createdNode = await createPerson(nodeData);
               idMapping.set(newNode.id, createdNode.id.toString());
@@ -446,6 +430,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
               motherId: originalNode.motherId ?? null,
               spouses: originalNode.spouses ?? [],
               children: originalNode.children ?? [],
+              avatar: originalNode.avatar ?? null,
             };
             const updatedSubset = {
               name: node.name ?? null,
@@ -461,6 +446,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
               motherId: node.motherId ?? null,
               spouses: node.spouses ?? [],
               children: node.children ?? [],
+              avatar: node.avatar ?? null,
             };
             const isUpdated =
               JSON.stringify(originalSubset) !== JSON.stringify(updatedSubset);
@@ -478,6 +464,43 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
             const addedSpouses = updatedSpouses.filter(
               (spouseId) => !originalSpouses.includes(spouseId)
             );
+
+            let hasInvalidAvatar = false;
+            if (updatedNode.avatar !== originalNode.avatar) {
+              console.log(
+                `Avatar changed for ${updatedNode.name} (${updatedNode.id}):`,
+                `Old: ${originalNode.avatar}, New: ${updatedNode.avatar}`
+              );
+              if (updatedNode.avatar) {
+                const isValidImageUrl = updatedNode.avatar.match(
+                  /^(https?:\/\/.*\.(?:png|jpg|jpeg|gif))$/
+                );
+                if (!isValidImageUrl) {
+                  console.error(
+                    `Invalid avatar URL for ${updatedNode.name} (${updatedNode.id}):`,
+                    updatedNode.avatar
+                  );
+                  showNotification(
+                    "Invalid avatar URL. Please provide a direct link to an image (e.g., https://example.com/image.jpg).",
+                    "error"
+                  );
+                  hasInvalidAvatar = true;
+                } else {
+                  try {
+                    await updateAvatar(updatedNode.id, updatedNode.avatar);
+                    console.log(
+                      `Successfully updated avatar for ${updatedNode.name} (${updatedNode.id})`
+                    );
+                  } catch (error) {
+                    console.error(
+                      `Failed to update avatar for ${updatedNode.name} (${updatedNode.id}):`,
+                      error
+                    );
+                    showNotification("Failed to update avatar.", "error");
+                  }
+                }
+              }
+            }
 
             for (const spouseId of addedSpouses) {
               const spouseNode = updatedTreeWithRealIds.find(
@@ -507,6 +530,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                   motherId: updatedNode.motherId,
                   spouses: updatedNode.spouses,
                   children: updatedNode.children,
+                  avatar: updatedNode.avatar,
                 };
                 await addSpouse(spouseId, spouseData);
                 originalNode.spouses = originalNode.spouses || [];
@@ -542,7 +566,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                 updatedNode.fatherId !== originalNode.fatherId ||
                 updatedNode.motherId !== originalNode.motherId);
 
-            if (hasNonRelationshipChanges) {
+            if (hasNonRelationshipChanges && !hasInvalidAvatar) {
               const nodeData = {
                 id: updatedNode.id,
                 gender: updatedNode.gender,
@@ -558,13 +582,26 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                 motherId: updatedNode.motherId,
                 spouses: updatedNode.spouses,
                 children: updatedNode.children,
+                avatar: updatedNode.avatar,
               };
+              console.log(
+                `Saving node ${updatedNode.name} (${updatedNode.id}) with data:`,
+                JSON.stringify(nodeData, null, 2)
+              );
               await saveOrUpdateNode(nodeData, updatedNode.id);
+              console.log(
+                `Successfully saved node ${updatedNode.name} (${updatedNode.id})`
+              );
+            } else if (hasInvalidAvatar) {
+              console.log(
+                `Skipping saveOrUpdateNode for ${updatedNode.name} (${updatedNode.id}) due to invalid avatar URL`
+              );
             }
           }
-
           for (const deletedNode of deletedNodes) {
+            console.log(`Deleting node ${deletedNode.id}`);
             await deletePerson(deletedNode.id);
+            console.log(`Successfully deleted node ${deletedNode.id}`);
           }
 
           const finalTree = updatedTreeWithRealIds.map((node) => {
@@ -590,8 +627,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                 "birth place": node.birthPlace,
                 "death place": node.deathPlace,
                 "has sub tree": node.hasSubTree,
-                "memory box filename": node.memoryBoxFilename,
-                memoryBoxContentType: node.memoryBoxContentType,
+                avatar: node.avatar,
               },
               rels: {
                 father: sanitizeRel(node.fatherId),
@@ -602,6 +638,10 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
             };
           });
 
+          console.log(
+            "Final Tree before updating chart:",
+            JSON.stringify(finalTree, null, 2)
+          );
           chartInstance.updateData(finalTree);
           originalTreeRef.current = updatedTreeWithRealIds;
           memoizedOnTreeUpdate();
@@ -660,6 +700,7 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
             birthPlace: node.data.birthPlace || null,
             deathPlace: node.data.deathPlace || null,
             hasSubTree: node.data.hasSubTree || false,
+            avatar: node.data.avatar || null,
             fatherId: node.rels.father || null,
             motherId: node.rels.mother || null,
             spouses: node.rels.spouses || [],
@@ -719,33 +760,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
       className="family-tree-container"
       style={{ width: "100%", minHeight: "100vh", position: "relative" }}
     >
-      {notification && (
-        <div
-          style={{
-            position: "fixed",
-            top: "20px",
-            right: "20px",
-            padding: "10px 20px",
-            backgroundColor:
-              notification.type === "error" ? "#f44336" : "#4caf50",
-            color: "white",
-            borderRadius: "5px",
-            zIndex: 1000,
-            boxShadow: "0 2px 5px rgba(0,0,0,0.2)",
-          }}
-        >
-          {notification.message}
-        </div>
-      )}
-      {!isAdmin && (
-        <div style={{ color: "orange", marginBottom: "10px" }}>
-          You are viewing the family tree in read-only mode. Only admins can
-          modify the tree.
-        </div>
-      )}
-      {error && (
-        <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>
-      )}
       <div ref={containerRef} id="FamilyChart"></div>
     </div>
   );

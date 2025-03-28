@@ -5,14 +5,10 @@ import com.familytree.model.Person;
 import com.familytree.model.dto.PersonDTO;
 import com.familytree.repository.PersonRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
 import javax.validation.Valid;
-import java.io.IOException;
+import javax.validation.constraints.Pattern;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -48,6 +44,12 @@ public class PersonController {
         }
         if (person.getSpouses() == null) person.setSpouses(new ArrayList<>());
         if (person.getChildren() == null) person.setChildren(new ArrayList<>());
+        if (person.getAvatar() != null && !person.getAvatar().isEmpty()) {
+            if (!isValidImageUrl(person.getAvatar())) {
+                System.out.println("Invalid avatar URL: " + person.getAvatar());
+                return ResponseEntity.badRequest().build();
+            }
+        }
         Person savedPerson = personRepository.save(person);
         return ResponseEntity.ok(new PersonDTO(savedPerson));
     }
@@ -58,8 +60,36 @@ public class PersonController {
         person.setId(personId);
         if (person.getSpouses() == null) person.setSpouses(new ArrayList<>());
         if (person.getChildren() == null) person.setChildren(new ArrayList<>());
+        if (person.getAvatar() != null && !person.getAvatar().isEmpty()) {
+            if (!isValidImageUrl(person.getAvatar())) {
+                System.out.println("Invalid avatar URL: " + person.getAvatar());
+                return ResponseEntity.badRequest().build();            }
+        }
         Person savedPerson = personRepository.save(person);
         return ResponseEntity.ok(new PersonDTO(savedPerson));
+    }
+
+    @PostMapping("/{personId}/avatar")
+    public ResponseEntity<PersonDTO> updateAvatar(
+            @PathVariable String personId,
+            @RequestBody @Pattern(regexp = "^(https?://.*\\.(?:png|jpg|jpeg|gif))$", message = "Invalid image URL") String avatarUrl) {
+        System.out.println("Updating avatar for person ID: " + personId + ", URL: " + avatarUrl);
+        return personRepository.findById(personId)
+                .map(person -> {
+                    person.setAvatar(avatarUrl);
+                    Person savedPerson = personRepository.save(person);
+                    System.out.println("Successfully updated avatar for person ID: " + personId);
+                    return ResponseEntity.ok(new PersonDTO(savedPerson));
+                })
+                .orElseGet(() -> {
+                    System.out.println("Person not found: " + personId);
+                    return ResponseEntity.notFound().build();
+                });
+    }
+
+    private boolean isValidImageUrl(String url) {
+        if (url == null) return false;
+        return url.matches("^(https?://.*\\.(?:png|jpg|jpeg|gif))$");
     }
 
     @PostMapping("/{personId}/child")
@@ -106,7 +136,6 @@ public class PersonController {
         System.out.println("Received spouse: " + spouse.getName() + ", Gender: " + spouse.getGender());
         return personRepository.findById(personId)
                 .map(person -> {
-                    System.out.println("==========================================================================================================\n====================================================");
                     if (spouse.getId() == null || spouse.getId().trim().isEmpty()) {
                         spouse.setId(UUID.randomUUID().toString());
                     } else if (personRepository.findById(spouse.getId()).isPresent()) {
@@ -170,42 +199,6 @@ public class PersonController {
                     }
                     personRepository.delete(person);
                     return ResponseEntity.ok().build();
-                })
-                .orElseGet(() -> ResponseEntity.notFound().build());
-    }
-
-    @PostMapping("/{personId}/memory-box")
-    public ResponseEntity<PersonDTO> uploadMemoryBox(
-            @PathVariable String personId,
-            @RequestParam("file") MultipartFile file) throws IOException {
-        return personRepository.findById(personId)
-                .map(person -> {
-                    try {
-                        person.setMemoryBoxFile(file.getBytes());
-                        person.setMemoryBoxFilename(file.getOriginalFilename());
-                        person.setMemoryBoxContentType(file.getContentType());
-                        Person savedPerson = personRepository.save(person);
-                        return ResponseEntity.ok(new PersonDTO(savedPerson));
-                    } catch (IOException e) {
-                        throw new RuntimeException("Failed to upload file", e);
-                    }
-                })
-                .orElseGet(() -> ResponseEntity.notFound().build());
-    }
-
-    @GetMapping("/{personId}/memory-box")
-    public ResponseEntity<?> getMemoryBox(@PathVariable String personId) {
-        return personRepository.findById(personId)
-                .map(person -> {
-                    if (person.getMemoryBoxFile() == null) {
-                        return ResponseEntity.noContent().build();
-                    }
-                    HttpHeaders headers = new HttpHeaders();
-                    headers.setContentType(MediaType.parseMediaType(person.getMemoryBoxContentType()));
-                    headers.setContentDispositionFormData("attachment", person.getMemoryBoxFilename());
-                    return ResponseEntity.ok()
-                            .headers(headers)
-                            .body(person.getMemoryBoxFile());
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }

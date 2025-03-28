@@ -24,9 +24,7 @@ public class PersonDTO {
     private String fatherId;
     private String motherId;
     private List<String> children = new ArrayList<>();
-    private byte[] memoryBoxFile;
-    private String memoryBoxFilename;
-    private String memoryBoxContentType;
+    private String avatar;
 
     public PersonDTO() {}
 
@@ -45,8 +43,6 @@ public class PersonDTO {
         this.fatherId = person.getFatherId();
         this.motherId = person.getMotherId();
         this.children = person.getChildren() != null ? new ArrayList<>(person.getChildren()) : new ArrayList<>();
-        this.memoryBoxFile = person.getMemoryBoxFile();
-        this.memoryBoxFilename = person.getMemoryBoxFilename();
-        this.memoryBoxContentType = person.getMemoryBoxContentType();
+        this.avatar = person.getAvatar();
     }
 }
