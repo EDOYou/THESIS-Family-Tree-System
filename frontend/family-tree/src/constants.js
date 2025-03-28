@@ -26,12 +26,3 @@ export const CHART_DIMENSIONS = {
   width: 1200,
   height: 800,
 };
-
-export const CARD_DIMENSIONS = {
-  w: 220,
-  h: 70,
-  img_w: 60,
-  img_h: 60,
-  img_x: 5,
-  img_y: 5,
-};

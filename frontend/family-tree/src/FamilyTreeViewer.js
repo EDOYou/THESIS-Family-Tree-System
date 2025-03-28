@@ -1,7 +1,6 @@
 import React, {
   useEffect,
   useRef,
-  useState,
   useCallback,
   useMemo,
 } from "react";
@@ -26,8 +25,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
   const cardInstanceRef = useRef(null);
   const editTreeInstanceRef = useRef(null);
   const originalTreeRef = useRef([]);
-  const [error, setError] = useState(null);
-  const [notification, setNotification] = useState(null);
 
   const transformedTree = useMemo(() => {
     const transformed = transformTree(tree);
@@ -41,13 +38,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
     },
     [onTreeUpdate]
   );
-
-  const showNotification = (message, type = "error", duration = 3000) => {
-    setNotification({ message, type });
-    setTimeout(() => {
-      setNotification(null);
-    }, duration);
-  };
 
   useEffect(() => {
     if (!transformedTree.length) {
@@ -79,7 +69,20 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
 
       console.log("EditTreeInstance initialized:", editTreeInstance);
 
-      const allFields = [
+      // Define two sets of fields: one for view mode (excluding Avatar URL) and one for edit mode (including Avatar URL)
+      const viewFields = [
+        { type: "text", label: "First Name", id: "firstName" },
+        { type: "text", label: "Last Name", id: "lastName" },
+        { type: "text", label: "Occupation", id: "occupation" },
+        { type: "text", label: "Age", id: "age" },
+        { type: "text", label: "Birth Date", id: "birthDate" },
+        { type: "text", label: "Death Date", id: "deathDate" },
+        { type: "text", label: "Birth Place", id: "birthPlace" },
+        { type: "text", label: "Death Place", id: "deathPlace" },
+        // Exclude "Avatar URL" in view mode
+      ];
+
+      const editFields = [
         { type: "text", label: "First Name", id: "firstName" },
         { type: "text", label: "Last Name", id: "lastName" },
         { type: "text", label: "Occupation", id: "occupation" },
@@ -89,10 +92,47 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
         { type: "text", label: "Birth Place", id: "birthPlace" },
         { type: "text", label: "Death Place", id: "deathPlace" },
         { type: "text", label: "Has Sub Tree", id: "hasSubTree" },
-        { type: "text", label: "Avatar URL", id: "avatar" },
+        { type: "text", label: "Avatar URL", id: "avatar" }, // Include "Avatar URL" in edit mode
       ];
 
-      editTreeInstance.setFields(allFields);
+      // Store the original open method
+      const originalOpen = editTreeInstance.open.bind(editTreeInstance);
+
+      // Override the open method to switch fields based on mode
+      editTreeInstance.open = function (datum) {
+        if (datum.data.data) datum = datum.data;
+
+        // Check if the form should open in edit mode
+        const isEditMode =
+          this.editFirst || // Form opens in edit mode if editFirst is true
+          datum._new_rel_data || // Form is for adding a new relative (always editable)
+          d3.select(this.form_cont).classed("edit-mode"); // Form is already in edit mode
+
+        console.log("Opening form, isEditMode:", isEditMode);
+
+        // Set the appropriate fields based on the mode
+        this.setFields(isEditMode ? editFields : viewFields);
+
+        // Call the original open method
+        originalOpen(datum);
+      };
+
+      // Initially set the fields to view mode
+      editTreeInstance.setFields(viewFields);
+
+      // Add a listener to detect when the form enters or exits edit mode
+      editTreeInstance.setOnChange(() => {
+        const form = d3.select(editTreeInstance.form_cont).select("form");
+        if (form.node()) {
+          const isEditable = form.classed("editable");
+          console.log("Form state changed, isEditable:", isEditable);
+
+          // Update the edit-mode class and fields based on the form's editable state
+          d3.select(editTreeInstance.form_cont).classed("edit-mode", isEditable);
+          editTreeInstance.setFields(isEditable ? editFields : viewFields);
+        }
+      });
+
       editTreeInstance.setEditFirst(true);
       editTreeInstance.setAddRelLabels({
         father: "Add Father",
@@ -105,7 +145,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
       editTreeInstance.addRelative = (datum) => {
         if (!isAdmin) {
           console.log("Add Relative blocked: User is not an admin");
-          showNotification("Only admins can add relatives to the family tree.");
           return;
         }
 
@@ -201,7 +240,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
       editTreeInstance.setOnChange(async () => {
         if (!isAdmin) {
           console.log("Tree update blocked: User is not an admin");
-          showNotification("Only admins can modify the family tree.");
           chartInstance.updateData(originalTreeRef.current);
           return;
         }
@@ -480,10 +518,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                     `Invalid avatar URL for ${updatedNode.name} (${updatedNode.id}):`,
                     updatedNode.avatar
                   );
-                  showNotification(
-                    "Invalid avatar URL. Please provide a direct link to an image (e.g., https://example.com/image.jpg).",
-                    "error"
-                  );
                   hasInvalidAvatar = true;
                 } else {
                   try {
@@ -496,7 +530,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                       `Failed to update avatar for ${updatedNode.name} (${updatedNode.id}):`,
                       error
                     );
-                    showNotification("Failed to update avatar.", "error");
                   }
                 }
               }
@@ -645,11 +678,8 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
           chartInstance.updateData(finalTree);
           originalTreeRef.current = updatedTreeWithRealIds;
           memoizedOnTreeUpdate();
-          setError(null);
-          showNotification("Family tree updated successfully!", "success");
         } catch (error) {
           console.error("Error during tree update:", error);
-          setError("Failed to update the tree. Please try again.");
           chartInstance.updateData(originalTreeRef.current);
           throw error;
         }
@@ -747,7 +777,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
       };
     } catch (error) {
       console.error("Error rendering FamilyChart:", error);
-      setError("Failed to render the family tree.");
     }
   }, [transformedTree, memoizedOnTreeUpdate, isAdmin]);
 

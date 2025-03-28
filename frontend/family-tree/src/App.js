@@ -71,7 +71,7 @@ const App = () => {
     if (user) {
       loadTree();
     }
-  }, [refreshKey, debug, user]);
+  }, [refreshKey, debug, user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleTreeUpdate = () => {
     setRefreshKey((prev) => prev + 1);
