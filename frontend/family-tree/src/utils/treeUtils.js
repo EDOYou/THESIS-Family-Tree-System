@@ -1,9 +1,11 @@
+import { logDebug } from "./debugUtils";
+
 export const createPersonMap = (persons, debug = false) => {
   logDebug("createPersonMap: Input persons:", persons, debug);
 
   const personList = Array.isArray(persons) ? persons : [];
   if (personList.length === 0) {
-    logWarn("personList is empty, returning null", debug);
+    logDebug("personList is empty, returning null", debug);
     return null;
   }
 
@@ -37,11 +39,11 @@ export const createPersonMap = (persons, debug = false) => {
 };
 
 const processRelationships = (person, personMap, debug = false) => {
-  logDebug(
-    `processRelationships: Before processing person ${person.id}:`,
-    person,
-    debug
-  );
+  // logDebug(
+  //   `processRelationships: Before processing person ${person.id}:`,
+  //   person,
+  //   debug
+  // );
 
   person.spouses = person.spouses || [];
   person.children = person.children || [];
@@ -141,7 +143,7 @@ export const buildTree = (persons, debug = false) => {
 
 export const transformTree = (tree) => {
   try {
-    console.log("Input tree from backend:", JSON.stringify(tree, null, 2));
+    // console.log("Input tree from backend:", JSON.stringify(tree, null, 2));
 
     const transformed = tree.map((node) => {
       if (!node.id) {
@@ -222,17 +224,5 @@ export const transformTree = (tree) => {
   } catch (error) {
     console.error("Error transforming tree:", error);
     throw error;
-  }
-};
-
-export const logDebug = (message, data, debug = false) => {
-  if (debug) {
-    console.log(message, data);
-  }
-};
-
-export const logWarn = (message, debug = false) => {
-  if (debug) {
-    console.warn(message);
   }
 };

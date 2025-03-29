@@ -1,6 +1,7 @@
 import * as d3 from "d3";
 import f3 from "family-chart";
-import { CHART_DIMENSIONS } from "./constants";
+import { CHART_DIMENSIONS, FAMILY_CHART_CONTAINER_ID } from "../constants";
+import { logDebug } from "./debugUtils";
 
 export const initializeChart = (
   container,
@@ -68,4 +69,20 @@ export const configureCard = (cardInstance) => {
     console.error("Error configuring card:", error);
     throw error;
   }
+};
+
+export const validateChartSetup = (transformedTree, containerRef) => {
+  if (!transformedTree.length) {
+    logDebug("No transformed tree data available, skipping render.");
+    return false;
+  }
+
+  const currentContainer =
+    document.getElementById(FAMILY_CHART_CONTAINER_ID) || containerRef.current;
+  if (!currentContainer) {
+    console.error("FamilyChart container not found");
+    return false;
+  }
+
+  return currentContainer;
 };

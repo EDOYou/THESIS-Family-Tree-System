@@ -4,7 +4,7 @@ import FamilyTreeViewer from "./FamilyTreeViewer";
 import Login from "./Login";
 import Register from "./Register";
 import ProtectedRoute from "./ProtectedRoute";
-import { buildTree } from "./treeUtils";
+import { buildTree } from "./utils/treeUtils";
 import { fetchFamilyTree, createPerson } from "./nodeService";
 import { DEFAULT_ME_NODE } from "./constants";
 import { useAuth } from "./AuthContext";
@@ -13,25 +13,17 @@ const App = () => {
   const [tree, setTree] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [error, setError] = useState(null);
-  const debug = true;
+  const debug = false;
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const loadTree = async () => {
     try {
-      console.log(
-        "Before fetchFamilyTree - user in localStorage:",
-        localStorage.getItem("user")
-      );
-      console.log(
-        "Before fetchFamilyTree - authHeader in localStorage:",
-        localStorage.getItem("authHeader")
-      );
       const persons = await fetchFamilyTree();
-      console.log(
-        "Fetched persons from backend:",
-        JSON.stringify(persons, null, 2)
-      );
+      // console.log(
+      //   "Fetched persons from backend:",
+      //   JSON.stringify(persons, null, 2)
+      // );
       const treeData = buildTree(persons, debug) || [];
       setTree(treeData.length > 0 ? treeData : []);
       setError(null);
@@ -67,7 +59,6 @@ const App = () => {
   };
 
   useEffect(() => {
-    console.log("App useEffect - user from AuthContext:", user);
     if (user) {
       loadTree();
     }
