@@ -318,6 +318,28 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
 
             try {
               if (isSpouse && spouseNode) {
+                let hasInvalidAvatar = false;
+                if (newNode.avatar) {
+                  const isValidImageUrl = newNode.avatar.match(
+                    /^(https?:\/\/.*\.(?:png|jpg|jpeg|gif))$/
+                  );
+                  if (!isValidImageUrl) {
+                    console.error(
+                      `Invalid avatar URL for new spouse ${newNode.name} (${newNode.id}):`,
+                      newNode.avatar
+                    );
+                    showNotification(
+                      "Invalid avatar URL for new spouse. Please provide a direct link to an image (e.g., https://example.com/image.jpg).",
+                      "error"
+                    );
+                    hasInvalidAvatar = true;
+                  }
+                }
+
+                if (hasInvalidAvatar) {
+                  throw new Error("Invalid avatar URL for new spouse.");
+                }
+
                 const spouseData = {
                   gender: newNode.gender,
                   name: newNode.name,
@@ -332,10 +354,56 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                   motherId: newNode.motherId,
                   spouses: newNode.spouses,
                   children: newNode.children,
-                  avatar: newNode.avatar,
                 };
+                console.log(
+                  `Adding spouse for ${spouseId} with data:`,
+                  JSON.stringify(spouseData, null, 2)
+                );
                 const createdSpouse = await addSpouse(spouseId, spouseData);
                 idMapping.set(newNode.id, createdSpouse.id.toString());
+
+                if (newNode.avatar) {
+                  try {
+                    await updateAvatar(createdSpouse.id, newNode.avatar);
+                    console.log(
+                      `Successfully updated avatar for new spouse ${newNode.name} (${createdSpouse.id})`
+                    );
+                  } catch (error) {
+                    if (error.message.includes("MemoryBox not found")) {
+                      try {
+                        const memoryBoxData = { avatar: newNode.avatar };
+                        await createMemoryBox(createdSpouse.id, memoryBoxData);
+                        console.log(
+                          `Created new MemoryBox and set avatar for new spouse ${newNode.name} (${createdSpouse.id})`
+                        );
+                        showNotification(
+                          `Created a new MemoryBox and updated avatar for ${newNode.name}.`,
+                          "success"
+                        );
+                      } catch (createError) {
+                        console.error(
+                          `Failed to create MemoryBox for new spouse ${newNode.name} (${createdSpouse.id}):`,
+                          createError
+                        );
+                        showNotification(
+                          `Failed to create MemoryBox for ${newNode.name}: ${createError.message}`,
+                          "error"
+                        );
+                        throw createError;
+                      }
+                    } else {
+                      console.error(
+                        `Failed to update avatar for new spouse ${newNode.name} (${createdSpouse.id}):`,
+                        error
+                      );
+                      showNotification(
+                        `Failed to update avatar for ${newNode.name}: ${error.message}`,
+                        "error"
+                      );
+                      throw error;
+                    }
+                  }
+                }
 
                 const spouseNodeInOriginal = transformedOriginalTree.find(
                   (n) => n.id === spouseId
@@ -375,7 +443,30 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                 const parentNode = updatedTree.find(
                   (node) => node.id === parentId
                 );
+
                 if (parentNode) {
+                  let hasInvalidAvatar = false;
+                  if (newNode.avatar) {
+                    const isValidImageUrl = newNode.avatar.match(
+                      /^(https?:\/\/.*\.(?:png|jpg|jpeg|gif))$/
+                    );
+                    if (!isValidImageUrl) {
+                      console.error(
+                        `Invalid avatar URL for new child ${newNode.name} (${newNode.id}):`,
+                        newNode.avatar
+                      );
+                      showNotification(
+                        "Invalid avatar URL for new child. Please provide a direct link to an image (e.g., https://example.com/image.jpg).",
+                        "error"
+                      );
+                      hasInvalidAvatar = true;
+                    }
+                  }
+
+                  if (hasInvalidAvatar) {
+                    throw new Error("Invalid avatar URL for new child.");
+                  }
+
                   const childData = {
                     gender: newNode.gender,
                     name: newNode.name,
@@ -390,10 +481,56 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                     motherId: newNode.motherId,
                     spouses: newNode.spouses,
                     children: newNode.children,
-                    avatar: newNode.avatar,
                   };
+                  console.log(
+                    `Adding child for ${parentId} with data:`,
+                    JSON.stringify(childData, null, 2)
+                  );
                   const createdChild = await addChild(parentId, childData);
                   idMapping.set(newNode.id, createdChild.id.toString());
+
+                  if (newNode.avatar) {
+                    try {
+                      await updateAvatar(createdChild.id, newNode.avatar);
+                      console.log(
+                        `Successfully updated avatar for new child ${newNode.name} (${createdChild.id})`
+                      );
+                    } catch (error) {
+                      if (error.message.includes("MemoryBox not found")) {
+                        try {
+                          const memoryBoxData = { avatar: newNode.avatar };
+                          await createMemoryBox(createdChild.id, memoryBoxData);
+                          console.log(
+                            `Created new MemoryBox and set avatar for new child ${newNode.name} (${createdChild.id})`
+                          );
+                          showNotification(
+                            `Created a new MemoryBox and updated avatar for ${newNode.name}.`,
+                            "success"
+                          );
+                        } catch (createError) {
+                          console.error(
+                            `Failed to create MemoryBox for new child ${newNode.name} (${createdChild.id}):`,
+                            createError
+                          );
+                          showNotification(
+                            `Failed to create MemoryBox for ${newNode.name}: ${createError.message}`,
+                            "error"
+                          );
+                          throw createError;
+                        }
+                      } else {
+                        console.error(
+                          `Failed to update avatar for new child ${newNode.name} (${createdChild.id}):`,
+                          error
+                        );
+                        showNotification(
+                          `Failed to update avatar for ${newNode.name}: ${error.message}`,
+                          "error"
+                        );
+                        throw error;
+                      }
+                    }
+                  }
                   continue;
                 }
               }
@@ -412,10 +549,71 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                 motherId: newNode.motherId,
                 spouses: newNode.spouses,
                 children: newNode.children,
-                avatar: newNode.avatar,
               };
+              console.log(
+                `Creating new node with data:`,
+                JSON.stringify(nodeData, null, 2)
+              );
               const createdNode = await createPerson(nodeData);
               idMapping.set(newNode.id, createdNode.id.toString());
+
+              if (newNode.avatar) {
+                const isValidImageUrl = newNode.avatar.match(
+                  /^(https?:\/\/.*\.(?:png|jpg|jpeg|gif))$/
+                );
+                if (!isValidImageUrl) {
+                  console.error(
+                    `Invalid avatar URL for new node ${newNode.name} (${newNode.id}):`,
+                    newNode.avatar
+                  );
+                  showNotification(
+                    "Invalid avatar URL for new node. Please provide a direct link to an image (e.g., https://example.com/image.jpg).",
+                    "error"
+                  );
+                  throw new Error("Invalid avatar URL for new node.");
+                }
+
+                try {
+                  await updateAvatar(createdNode.id, newNode.avatar);
+                  console.log(
+                    `Successfully updated avatar for new node ${newNode.name} (${createdNode.id})`
+                  );
+                } catch (error) {
+                  if (error.message.includes("MemoryBox not found")) {
+                    try {
+                      const memoryBoxData = { avatar: newNode.avatar };
+                      await createMemoryBox(createdNode.id, memoryBoxData);
+                      console.log(
+                        `Created new MemoryBox and set avatar for new node ${newNode.name} (${createdNode.id})`
+                      );
+                      showNotification(
+                        `Created a new MemoryBox and updated avatar for ${newNode.name}.`,
+                        "success"
+                      );
+                    } catch (createError) {
+                      console.error(
+                        `Failed to create MemoryBox for new node ${newNode.name} (${createdNode.id}):`,
+                        createError
+                      );
+                      showNotification(
+                        `Failed to create MemoryBox for ${newNode.name}: ${createError.message}`,
+                        "error"
+                      );
+                      throw createError;
+                    }
+                  } else {
+                    console.error(
+                      `Failed to update avatar for new node ${newNode.name} (${createdNode.id}):`,
+                      error
+                    );
+                    showNotification(
+                      `Failed to update avatar for ${newNode.name}: ${error.message}`,
+                      "error"
+                    );
+                    throw error;
+                  }
+                }
+              }
             } catch (error) {
               console.error(
                 `Failed to create new node ${newNode.name} (${newNode.id}):`,
@@ -577,6 +775,28 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                   continue;
                 }
 
+                let hasInvalidAvatarForSpouse = false;
+                if (updatedNode.avatar) {
+                  const isValidImageUrl = updatedNode.avatar.match(
+                    /^(https?:\/\/.*\.(?:png|jpg|jpeg|gif))$/
+                  );
+                  if (!isValidImageUrl) {
+                    console.error(
+                      `Invalid avatar URL for spouse update ${updatedNode.name} (${updatedNode.id}):`,
+                      updatedNode.avatar
+                    );
+                    showNotification(
+                      "Invalid avatar URL for spouse update. Please provide a direct link to an image (e.g., https://example.com/image.jpg).",
+                      "error"
+                    );
+                    hasInvalidAvatarForSpouse = true;
+                  }
+                }
+
+                if (hasInvalidAvatarForSpouse) {
+                  continue;
+                }
+
                 const spouseData = {
                   id: updatedNode.id,
                   gender: updatedNode.gender,
@@ -592,8 +812,12 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                   motherId: updatedNode.motherId,
                   spouses: updatedNode.spouses,
                   children: updatedNode.children,
-                  avatar: updatedNode.avatar,
                 };
+
+                console.log(
+                  `Adding spouse for ${spouseId} with data:`,
+                  JSON.stringify(spouseData, null, 2)
+                );
                 await addSpouse(spouseId, spouseData);
                 originalNode.spouses = originalNode.spouses || [];
                 if (!originalNode.spouses.includes(spouseId)) {

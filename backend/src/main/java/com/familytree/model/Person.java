@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.Data;
 import jakarta.persistence.*;
-import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +12,6 @@ import java.util.List;
 @Entity
 @Table(name = "persons")
 @JsonIgnoreProperties(ignoreUnknown = true)
-@ToString
 public class Person {
 
     @Id
