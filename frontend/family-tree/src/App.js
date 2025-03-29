@@ -5,6 +5,7 @@ import Login from "./Login";
 import Register from "./Register";
 import ChatPage from "./ChatPage";
 import EventsPage from "./EventsPage";
+import NotableRecordsPage from "./NotableRecordsPage";
 import ProtectedRoute from "./ProtectedRoute";
 import { buildTree } from "./utils/treeUtils";
 import { fetchFamilyTree, createPerson } from "./nodeService";
@@ -22,10 +23,6 @@ const App = () => {
   const loadTree = async () => {
     try {
       const persons = await fetchFamilyTree();
-      // console.log(
-      //   "Fetched persons from backend:",
-      //   JSON.stringify(persons, null, 2)
-      // );
       const treeData = buildTree(persons, debug) || [];
       setTree(treeData.length > 0 ? treeData : []);
       setError(null);
@@ -77,44 +74,102 @@ const App = () => {
   };
 
   const FamilyTreePage = () => (
-    <div style={{ textAlign: "center", padding: "20px" }}>
-      {user && (
-        <div style={{ marginBottom: "10px" }}>
-          <span>
-            Welcome, {user.username} ({user.role})
-          </span>
-          <Link to="/chat" style={{ marginLeft: "10px", marginRight: "10px" }}>
-            Go to Chat
-          </Link>
-          <Link to="/events" style={{ marginRight: "10px" }}>
-            Manage Events
-          </Link>
-          <button onClick={handleLogout}>Logout</button>
-        </div>
-      )}
-      {error && (
-        <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>
-      )}
+    <div style={{ display: "flex", minHeight: "100vh" }}>
+      {/* Sidebar */}
       <div
-        id="FamilyChart"
-        className="f3"
         style={{
-          width: "100%",
-          height: "900px",
-          margin: "auto",
-          backgroundColor: "rgb(33, 33, 33)",
+          width: "200px",
+          backgroundColor: "#333",
           color: "#fff",
+          padding: "20px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
         }}
       >
-        {tree.length > 0 ? (
-          <FamilyTreeViewer
-            tree={tree}
-            onTreeUpdate={handleTreeUpdate}
-            isAdmin={user?.role === "ADMIN"}
-          />
-        ) : (
-          <div>Loading family tree...</div>
+        <h2 style={{ marginTop: 0 }}>Family Tree</h2>
+        {user && (
+          <div style={{ textAlign: "center", marginBottom: "20px" }}>
+            <p>
+              Welcome, {user.username} ({user.role})
+            </p>
+          </div>
         )}
+        <nav>
+          <ul style={{ listStyleType: "none", padding: 0 }}>
+            <li style={{ marginBottom: "10px" }}>
+              <Link to="/" style={{ color: "#fff", textDecoration: "none" }}>
+                Family Tree
+              </Link>
+            </li>
+            <li style={{ marginBottom: "10px" }}>
+              <Link
+                to="/chat"
+                style={{ color: "#fff", textDecoration: "none" }}
+              >
+                Go to Chat
+              </Link>
+            </li>
+            <li style={{ marginBottom: "10px" }}>
+              <Link
+                to="/events"
+                style={{ color: "#fff", textDecoration: "none" }}
+              >
+                Manage Events
+              </Link>
+            </li>
+            <li style={{ marginBottom: "10px" }}>
+              <Link
+                to="/notable-records"
+                style={{ color: "#fff", textDecoration: "none" }}
+              >
+                Manage Notable Records
+              </Link>
+            </li>
+            <li>
+              <button
+                onClick={handleLogout}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#fff",
+                  cursor: "pointer",
+                  padding: 0,
+                }}
+              >
+                Logout
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+
+      {/* Main Content */}
+      <div style={{ flex: 1, padding: "20px", textAlign: "center" }}>
+        {error && (
+          <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>
+        )}
+        <div
+          id="FamilyChart"
+          className="f3"
+          style={{
+            width: "100%",
+            height: "900px",
+            margin: "auto",
+            backgroundColor: "rgb(33, 33, 33)",
+            color: "#fff",
+          }}
+        >
+          {tree.length > 0 ? (
+            <FamilyTreeViewer
+              tree={tree}
+              onTreeUpdate={handleTreeUpdate}
+              isAdmin={user?.role === "ADMIN"}
+            />
+          ) : (
+            <div>Loading family tree...</div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -144,6 +199,14 @@ const App = () => {
         element={
           <ProtectedRoute>
             <EventsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/notable-records"
+        element={
+          <ProtectedRoute>
+            <NotableRecordsPage />
           </ProtectedRoute>
         }
       />
