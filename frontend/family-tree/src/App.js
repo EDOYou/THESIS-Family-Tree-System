@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate, Link } from "react-router-dom";
 import FamilyTreeViewer from "./FamilyTreeViewer";
 import Login from "./Login";
 import Register from "./Register";
+import ChatPage from "./ChatPage";
 import ProtectedRoute from "./ProtectedRoute";
 import { buildTree } from "./utils/treeUtils";
 import { fetchFamilyTree, createPerson } from "./nodeService";
@@ -81,7 +82,10 @@ const App = () => {
           <span>
             Welcome, {user.username} ({user.role})
           </span>
-          <button onClick={handleLogout} style={{ marginLeft: "10px" }}>
+          <Link to="/chat" style={{ marginLeft: "10px", marginRight: "10px" }}>
+            Go to Chat
+          </Link>
+          <button onClick={handleLogout}>
             Logout
           </button>
         </div>
@@ -122,6 +126,14 @@ const App = () => {
         element={
           <ProtectedRoute>
             <FamilyTreePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/chat"
+        element={
+          <ProtectedRoute>
+            <ChatPage />
           </ProtectedRoute>
         }
       />
