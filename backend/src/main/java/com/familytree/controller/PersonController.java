@@ -1,14 +1,16 @@
 package com.familytree.controller;
 
 import com.familytree.model.Gender;
+import com.familytree.model.MemoryBox;
 import com.familytree.model.Person;
 import com.familytree.model.dto.PersonDTO;
 import com.familytree.repository.PersonRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
-import javax.validation.constraints.Pattern;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -16,6 +18,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/persons")
+@Slf4j
 public class PersonController {
 
     @Autowired
@@ -37,6 +40,7 @@ public class PersonController {
     }
 
     @PostMapping
+    @Transactional
     public ResponseEntity<PersonDTO> createPerson(@Valid @RequestBody Person person) {
         System.out.println("Creating person: " + person.getName() + ", ID: " + person.getId());
         if (person.getId() == null) {
@@ -44,70 +48,94 @@ public class PersonController {
         }
         if (person.getSpouses() == null) person.setSpouses(new ArrayList<>());
         if (person.getChildren() == null) person.setChildren(new ArrayList<>());
-        if (person.getAvatar() != null && !person.getAvatar().isEmpty()) {
-            if (!isValidImageUrl(person.getAvatar())) {
-                System.out.println("Invalid avatar URL: " + person.getAvatar());
-                return ResponseEntity.badRequest().build();
-            }
+        if (person.getMemoryBox() == null) {
+            person.setMemoryBox(new MemoryBox());
         }
+        person.getMemoryBox().setPerson(person);
+
         Person savedPerson = personRepository.save(person);
         return ResponseEntity.ok(new PersonDTO(savedPerson));
     }
 
     @PutMapping("/{personId}")
+    @Transactional
     public ResponseEntity<PersonDTO> saveOrUpdatePerson(@PathVariable String personId, @Valid @RequestBody Person person) {
         System.out.println("Updating person: " + person.getName() + ", ID: " + person.getId());
-        person.setId(personId);
-        if (person.getSpouses() == null) person.setSpouses(new ArrayList<>());
-        if (person.getChildren() == null) person.setChildren(new ArrayList<>());
-        if (person.getAvatar() != null && !person.getAvatar().isEmpty()) {
-            if (!isValidImageUrl(person.getAvatar())) {
-                System.out.println("Invalid avatar URL: " + person.getAvatar());
-                return ResponseEntity.badRequest().build();            }
-        }
-        Person savedPerson = personRepository.save(person);
-        return ResponseEntity.ok(new PersonDTO(savedPerson));
-    }
-
-    @PostMapping("/{personId}/avatar")
-    public ResponseEntity<PersonDTO> updateAvatar(
-            @PathVariable String personId,
-            @RequestBody @Pattern(regexp = "^(https?://.*\\.(?:png|jpg|jpeg|gif))$", message = "Invalid image URL") String avatarUrl) {
-        System.out.println("Updating avatar for person ID: " + personId + ", URL: " + avatarUrl);
         return personRepository.findById(personId)
-                .map(person -> {
-                    person.setAvatar(avatarUrl);
-                    Person savedPerson = personRepository.save(person);
-                    System.out.println("Successfully updated avatar for person ID: " + personId);
+                .map(existingPerson -> {
+                    existingPerson.setName(person.getName());
+                    existingPerson.setGender(person.getGender());
+                    existingPerson.setOccupation(person.getOccupation());
+                    existingPerson.setAge(person.getAge());
+                    existingPerson.setBirthDate(person.getBirthDate());
+                    existingPerson.setDeathDate(person.getDeathDate());
+                    existingPerson.setBirthPlace(person.getBirthPlace());
+                    existingPerson.setDeathPlace(person.getDeathPlace());
+                    existingPerson.setHasSubTree(person.isHasSubTree());
+                    existingPerson.setFatherId(person.getFatherId());
+                    existingPerson.setMotherId(person.getMotherId());
+
+                    MemoryBox existingMemoryBox = existingPerson.getMemoryBox();
+                    if (existingMemoryBox == null) {
+                        existingMemoryBox = new MemoryBox();
+                        existingPerson.setMemoryBox(existingMemoryBox);
+                        existingMemoryBox.setPerson(existingPerson);
+                    }
+
+                    if (person.getMemoryBox() != null && person.getMemoryBox().getAvatar() != null) {
+                        existingMemoryBox.setAvatar(person.getMemoryBox().getAvatar());
+                    }
+
+                    if (person.getSpouses() != null) {
+                        existingPerson.setSpouses(person.getSpouses());
+                    } else {
+                        existingPerson.setSpouses(new ArrayList<>());
+                    }
+                    if (person.getChildren() != null) {
+                        existingPerson.setChildren(person.getChildren());
+                    } else {
+                        existingPerson.setChildren(new ArrayList<>());
+                    }
+
+                    Person savedPerson = personRepository.save(existingPerson);
                     return ResponseEntity.ok(new PersonDTO(savedPerson));
                 })
-                .orElseGet(() -> {
-                    System.out.println("Person not found: " + personId);
-                    return ResponseEntity.notFound().build();
-                });
-    }
-
-    private boolean isValidImageUrl(String url) {
-        if (url == null) return false;
-        return url.matches("^(https?://.*\\.(?:png|jpg|jpeg|gif))$");
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping("/{personId}/child")
+    @Transactional
     public ResponseEntity<?> addChild(@PathVariable String personId, @Valid @RequestBody Person child) {
+        log.info("Adding child to person with ID: {}, Child name: {}", personId, child.getName());
         return personRepository.findById(personId)
                 .map(person -> {
                     if (child.getId() == null) {
                         child.setId(UUID.randomUUID().toString());
                     }
                     if (person.getSpouses().isEmpty()) {
+                        log.warn("Cannot add a child to person with ID: {} without at least one spouse.", personId);
                         return ResponseEntity.badRequest().body("Cannot add a child without at least one spouse.");
                     }
                     if (personRepository.findByName(child.getName()).isPresent()) {
+                        log.warn("A person with name {} already exists.", child.getName());
                         return ResponseEntity.badRequest().body("A person with this name already exists.");
                     }
                     child.setSpouses(new ArrayList<>());
                     child.setChildren(new ArrayList<>());
+
+                    MemoryBox memoryBox = new MemoryBox();
+                    memoryBox.setPerson(child);
+                    child.setMemoryBox(memoryBox);
+
+                    if (child.getMemoryBox() != null && child.getMemoryBox().getAvatar() != null) {
+                        String avatarUrl = child.getMemoryBox().getAvatar();
+                        memoryBox.setAvatar(avatarUrl);
+                        log.info("Set avatar for child's MemoryBox: {}", avatarUrl);
+                    }
+
                     Person savedChild = personRepository.save(child);
+                    log.info("Saved child with ID: {}, MemoryBox ID: {}, Avatar: {}",
+                            savedChild.getId(), savedChild.getMemoryBox().getId(), savedChild.getMemoryBox().getAvatar());
                     person.addChild(savedChild.getId());
 
                     String spouseId = person.getSpouses().stream().findFirst().orElse(null);
@@ -121,28 +149,41 @@ public class PersonController {
                             savedChild.setMotherId(person.getId());
                         }
                         personRepository.save(savedChild);
+                        log.info("Updated child with ID: {}, Father ID: {}, Mother ID: {}",
+                                savedChild.getId(), savedChild.getFatherId(), savedChild.getMotherId());
                     } else {
                         savedChild.setFatherId(person.getId());
                         personRepository.save(savedChild);
+                        log.info("Updated child with ID: {}, Father ID: {}", savedChild.getId(), savedChild.getFatherId());
                     }
                     personRepository.save(person);
+                    log.info("Updated person with ID: {} with new child ID: {}", person.getId(), savedChild.getId());
                     return ResponseEntity.ok(new PersonDTO(savedChild));
                 })
-                .orElseGet(() -> ResponseEntity.notFound().build());
+                .orElseGet(() -> {
+                    log.warn("Person with ID: {} not found.", personId);
+                    return ResponseEntity.notFound().build();
+                });
     }
 
     @PostMapping("/{personId}/spouse")
+    @Transactional
     public ResponseEntity<?> addSpouse(@PathVariable String personId, @Valid @RequestBody Person spouse) {
-        System.out.println("Received spouse: " + spouse.getName() + ", Gender: " + spouse.getGender());
+        log.info("Adding spouse to person with ID: {}, Spouse name: {}, Gender: {}",
+                personId, spouse.getName(), spouse.getGender());
+        log.info("Received spouse: {}", spouse);
         return personRepository.findById(personId)
                 .map(person -> {
                     if (spouse.getId() == null || spouse.getId().trim().isEmpty()) {
                         spouse.setId(UUID.randomUUID().toString());
                     } else if (personRepository.findById(spouse.getId()).isPresent()) {
+                        log.warn("Spouse with ID: {} already exists.", spouse.getId());
                         return ResponseEntity.badRequest().body("Spouse ID already exists.");
                     }
 
                     if (person.getGender() == spouse.getGender()) {
+                        log.warn("Spouse must be of a different gender. Person gender: {}, Spouse gender: {}",
+                                person.getGender(), spouse.getGender());
                         return ResponseEntity.badRequest().body("Spouse must be of a different gender.");
                     }
 
@@ -150,21 +191,38 @@ public class PersonController {
                     if (spouse.getChildren() == null) spouse.setChildren(new ArrayList<>());
                     if (person.getSpouses() == null) person.setSpouses(new ArrayList<>());
 
+                    MemoryBox memoryBox = new MemoryBox();
+                    memoryBox.setPerson(spouse);
+                    spouse.setMemoryBox(memoryBox);
+
+                    if (spouse.getMemoryBox() != null && spouse.getMemoryBox().getAvatar() != null) {
+                        String avatarUrl = spouse.getMemoryBox().getAvatar();
+                        memoryBox.setAvatar(avatarUrl);
+                        log.info("Set avatar for spouse's MemoryBox: {}", avatarUrl);
+                    }
+
                     Person savedSpouse = personRepository.save(spouse);
+                    log.info("Saved spouse with ID: {}, MemoryBox ID: {}, Avatar: {}",
+                            savedSpouse.getId(), savedSpouse.getMemoryBox().getId(), savedSpouse.getMemoryBox().getAvatar());
 
                     person.addSpouse(savedSpouse.getId());
                     savedSpouse.addSpouse(person.getId());
 
                     personRepository.save(person);
                     personRepository.save(savedSpouse);
+                    log.info("Updated person with ID: {} and spouse with ID: {} with mutual spouse relationship.",
+                            person.getId(), savedSpouse.getId());
 
-                    System.out.println("END ........");
                     return ResponseEntity.ok(new PersonDTO(savedSpouse));
                 })
-                .orElseGet(() -> ResponseEntity.notFound().build());
+                .orElseGet(() -> {
+                    log.warn("Person with ID: {} not found.", personId);
+                    return ResponseEntity.notFound().build();
+                });
     }
 
     @DeleteMapping("/{personId}")
+    @Transactional
     public ResponseEntity<?> deletePerson(@PathVariable String personId) {
         return personRepository.findById(personId)
                 .map(person -> {

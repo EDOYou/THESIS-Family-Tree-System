@@ -1,6 +1,7 @@
 import axios from "./axiosInstance";
 
 const API_URL = "/api/persons";
+const MEMORY_BOX_API_URL = "/api/memory-boxes";
 
 export const fetchFamilyTree = async () => {
   try {
@@ -98,8 +99,105 @@ export const deletePerson = async (personId) => {
 
 export const updateAvatar = async (personId, avatarUrl) => {
   try {
+    const memoryBoxResponse = await axios.get(
+      `${MEMORY_BOX_API_URL}/person/${personId}`
+    );
+    if (memoryBoxResponse.status !== 200 || !memoryBoxResponse.data.id) {
+      throw new Error("MemoryBox not found for person: " + personId);
+    }
+    const memoryBoxId = memoryBoxResponse.data.id;
+    console.log("Fetched MemoryBox ID for person", personId, ":", memoryBoxId);
+
+    const response = await axios.put(
+      `${MEMORY_BOX_API_URL}/${memoryBoxId}/avatar`,
+      avatarUrl,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    console.log("Raw response from updateAvatar:", response);
+    console.log("Avatar updated successfully:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating avatar:", error);
+    if (error.message.includes("MemoryBox not found")) {
+      try {
+        const newMemoryBox = { avatar: avatarUrl };
+        const createdMemoryBox = await createMemoryBox(personId, newMemoryBox);
+        return createdMemoryBox;
+      } catch (createError) {
+        console.error(
+          "Failed to create MemoryBox after not found:",
+          createError
+        );
+        throw createError;
+      }
+    }
+    throw new Error("Failed to update avatar: " + error.message);
+  }
+};
+
+export const fetchAllMemoryBoxes = async () => {
+  try {
+    const response = await axios.get(MEMORY_BOX_API_URL);
+    if (response.status === 200) {
+      return response.data;
+    }
+    return [];
+  } catch (error) {
+    console.error("Error fetching memory boxes:", error);
+    throw new Error("Failed to fetch memory boxes: " + error.message);
+  }
+};
+
+export const fetchMemoryBoxById = async (memoryBoxId) => {
+  try {
+    const response = await axios.get(`${MEMORY_BOX_API_URL}/${memoryBoxId}`);
+    if (response.status === 200) {
+      return response.data;
+    }
+    throw new Error("MemoryBox not found");
+  } catch (error) {
+    console.error("Error fetching memory box:", error);
+    throw new Error("Failed to fetch memory box: " + error.message);
+  }
+};
+
+export const fetchMemoryBoxByPersonId = async (personId) => {
+  try {
+    const response = await axios.get(
+      `${MEMORY_BOX_API_URL}/person/${personId}`
+    );
+    if (response.status === 200) {
+      return response.data;
+    }
+    throw new Error("MemoryBox not found for person: " + personId);
+  } catch (error) {
+    console.error("Error fetching memory box by personId:", error);
+    throw new Error("Failed to fetch memory box by personId: " + error.message);
+  }
+};
+
+export const createMemoryBox = async (personId, memoryBoxData) => {
+  try {
+    console.log("Creating memory box for person:", personId, memoryBoxData);
     const response = await axios.post(
-      `${API_URL}/${personId}/avatar`,
+      `${MEMORY_BOX_API_URL}/person/${personId}`,
+      memoryBoxData
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error creating memory box:", error);
+    throw new Error("Failed to create memory box: " + error.message);
+  }
+};
+
+export const updateMemoryBoxAvatar = async (memoryBoxId, avatarUrl) => {
+  try {
+    const response = await axios.put(
+      `${MEMORY_BOX_API_URL}/${memoryBoxId}/avatar`,
       avatarUrl,
       {
         headers: {
@@ -109,7 +207,17 @@ export const updateAvatar = async (personId, avatarUrl) => {
     );
     return response.data;
   } catch (error) {
-    console.error("Error updating avatar:", error);
-    throw new Error("Failed to update avatar: " + error.message);
+    console.error("Error updating memory box avatar:", error);
+    throw new Error("Failed to update memory box avatar: " + error.message);
+  }
+};
+
+export const deleteMemoryBox = async (memoryBoxId) => {
+  try {
+    const response = await axios.delete(`${MEMORY_BOX_API_URL}/${memoryBoxId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting memory box:", error);
+    throw new Error("Failed to delete memory box: " + error.message);
   }
 };

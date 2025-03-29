@@ -1,96 +1,82 @@
 package com.familytree.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import lombok.Data;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.ToString;
 
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
 import java.util.ArrayList;
 import java.util.List;
 
+@Data
 @Entity
 @Table(name = "persons")
-@Setter
-@Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
+@ToString
 public class Person {
 
     @Id
-    @Column(length = 36)
     private String id;
 
-    @NotNull
-    @Size(min = 2, max = 30)
     private String name;
-
-    @NotNull
-    @Min(0)
-    private Integer age;
-
+    private Gender gender;
     private String occupation;
+    private Integer age;
     private String birthDate;
     private String deathDate;
     private String birthPlace;
     private String deathPlace;
-    private Boolean hasSubTree;
-
-    @NotNull
-    @Enumerated(EnumType.STRING)
-    private Gender gender;
-
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "person_spouses", joinColumns = @JoinColumn(name = "person_id"))
-    @Column(name = "spouse_id")
-    private List<String> spouses = new ArrayList<>();
-
-    @Column(name = "father_id")
-    private String fatherId;
-
-    @Column(name = "mother_id")
-    private String motherId;
+    private boolean hasSubTree;
 
     @ElementCollection
-    @CollectionTable(name = "person_children", joinColumns = @JoinColumn(name = "person_id"))
-    @Column(name = "child_id")
+    private List<String> spouses = new ArrayList<>();
+
+    @ElementCollection
     private List<String> children = new ArrayList<>();
 
-    @Column(name = "avatar", length = 512)
-    private String avatar;
+    private String fatherId;
+    private String motherId;
 
-    public Person() {}
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "memory_box_id")
+    @JsonManagedReference
+    private MemoryBox memoryBox;
 
-    public Person(String id, String name, Integer age, Gender gender) {
-        this.id = id;
-        this.name = name;
-        this.age = age;
-        this.gender = gender;
+    public Person() {
+        setMemoryBox(new MemoryBox());
+    }
+
+    public void setMemoryBox(MemoryBox memoryBox) {
+        this.memoryBox = memoryBox;
+        if (memoryBox != null) {
+            memoryBox.setPerson(this);
+        }
     }
 
     public void addSpouse(String spouseId) {
+        if (spouses == null) spouses = new ArrayList<>();
         if (!spouses.contains(spouseId)) {
             spouses.add(spouseId);
         }
     }
 
     public void removeSpouse(String spouseId) {
-        spouses.remove(spouseId);
+        if (spouses != null) {
+            spouses.remove(spouseId);
+        }
     }
 
     public void addChild(String childId) {
+        if (children == null) children = new ArrayList<>();
         if (!children.contains(childId)) {
             children.add(childId);
         }
     }
 
     public void removeChild(String childId) {
-        children.remove(childId);
-    }
-
-    public void setParent(String fatherId, String motherId) {
-        this.fatherId = fatherId;
-        this.motherId = motherId;
+        if (children != null) {
+            children.remove(childId);
+        }
     }
 }

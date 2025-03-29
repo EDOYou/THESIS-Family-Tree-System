@@ -37,12 +37,12 @@ public class PersonDTO {
         this.deathDate = person.getDeathDate();
         this.birthPlace = person.getBirthPlace();
         this.deathPlace = person.getDeathPlace();
-        this.hasSubTree = person.getHasSubTree();
+        this.hasSubTree = person.isHasSubTree();
         this.gender = person.getGender() != null ? person.getGender().name() : null;
         this.spouses = person.getSpouses() != null ? new ArrayList<>(person.getSpouses()) : new ArrayList<>();
         this.fatherId = person.getFatherId();
         this.motherId = person.getMotherId();
         this.children = person.getChildren() != null ? new ArrayList<>(person.getChildren()) : new ArrayList<>();
-        this.avatar = person.getAvatar();
+        this.avatar = person.getMemoryBox() != null ? person.getMemoryBox().getAvatar() : null;
     }
 }

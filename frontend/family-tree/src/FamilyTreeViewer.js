@@ -1,9 +1,4 @@
-import React, {
-  useEffect,
-  useRef,
-  useCallback,
-  useMemo,
-} from "react";
+import React, { useEffect, useRef, useCallback, useMemo } from "react";
 import PropTypes from "prop-types";
 import * as d3 from "d3";
 import "./FamilyTreeViewer.css";
@@ -14,6 +9,7 @@ import {
   addSpouse,
   deletePerson,
   updateAvatar,
+  createMemoryBox,
 } from "./nodeService";
 import { transformTree } from "./treeUtils";
 import { initializeChart, configureCard } from "./chartUtils";
@@ -38,6 +34,11 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
     },
     [onTreeUpdate]
   );
+
+  const showNotification = (message, type) => {
+    console.log(`Notification [${type}]: ${message}`);
+    alert(`${type.toUpperCase()}: ${message}`);
+  };
 
   useEffect(() => {
     if (!transformedTree.length) {
@@ -69,7 +70,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
 
       console.log("EditTreeInstance initialized:", editTreeInstance);
 
-      // Define two sets of fields: one for view mode (excluding Avatar URL) and one for edit mode (including Avatar URL)
       const viewFields = [
         { type: "text", label: "First Name", id: "firstName" },
         { type: "text", label: "Last Name", id: "lastName" },
@@ -79,7 +79,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
         { type: "text", label: "Death Date", id: "deathDate" },
         { type: "text", label: "Birth Place", id: "birthPlace" },
         { type: "text", label: "Death Place", id: "deathPlace" },
-        // Exclude "Avatar URL" in view mode
       ];
 
       const editFields = [
@@ -92,43 +91,36 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
         { type: "text", label: "Birth Place", id: "birthPlace" },
         { type: "text", label: "Death Place", id: "deathPlace" },
         { type: "text", label: "Has Sub Tree", id: "hasSubTree" },
-        { type: "text", label: "Avatar URL", id: "avatar" }, // Include "Avatar URL" in edit mode
+        { type: "text", label: "Avatar URL", id: "avatar" },
       ];
 
-      // Store the original open method
       const originalOpen = editTreeInstance.open.bind(editTreeInstance);
 
-      // Override the open method to switch fields based on mode
       editTreeInstance.open = function (datum) {
         if (datum.data.data) datum = datum.data;
 
-        // Check if the form should open in edit mode
         const isEditMode =
-          this.editFirst || // Form opens in edit mode if editFirst is true
-          datum._new_rel_data || // Form is for adding a new relative (always editable)
-          d3.select(this.form_cont).classed("edit-mode"); // Form is already in edit mode
+          this.editFirst ||
+          datum._new_rel_data ||
+          d3.select(this.form_cont).classed("edit-mode");
 
         console.log("Opening form, isEditMode:", isEditMode);
 
-        // Set the appropriate fields based on the mode
         this.setFields(isEditMode ? editFields : viewFields);
-
-        // Call the original open method
         originalOpen(datum);
       };
 
-      // Initially set the fields to view mode
       editTreeInstance.setFields(viewFields);
-
-      // Add a listener to detect when the form enters or exits edit mode
       editTreeInstance.setOnChange(() => {
         const form = d3.select(editTreeInstance.form_cont).select("form");
         if (form.node()) {
           const isEditable = form.classed("editable");
           console.log("Form state changed, isEditable:", isEditable);
 
-          // Update the edit-mode class and fields based on the form's editable state
-          d3.select(editTreeInstance.form_cont).classed("edit-mode", isEditable);
+          d3.select(editTreeInstance.form_cont).classed(
+            "edit-mode",
+            isEditable
+          );
           editTreeInstance.setFields(isEditable ? editFields : viewFields);
         }
       });
@@ -429,6 +421,10 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                 `Failed to create new node ${newNode.name} (${newNode.id}):`,
                 error.response?.data || error.message
               );
+              showNotification(
+                `Failed to create new node ${newNode.name}: ${error.message}`,
+                "error"
+              );
               throw error;
             }
           }
@@ -518,6 +514,10 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                     `Invalid avatar URL for ${updatedNode.name} (${updatedNode.id}):`,
                     updatedNode.avatar
                   );
+                  showNotification(
+                    "Invalid avatar URL. Please provide a direct link to an image (e.g., https://example.com/image.jpg).",
+                    "error"
+                  );
                   hasInvalidAvatar = true;
                 } else {
                   try {
@@ -526,10 +526,39 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
                       `Successfully updated avatar for ${updatedNode.name} (${updatedNode.id})`
                     );
                   } catch (error) {
-                    console.error(
-                      `Failed to update avatar for ${updatedNode.name} (${updatedNode.id}):`,
-                      error
-                    );
+                    if (error.message.includes("MemoryBox not found")) {
+                      try {
+                        const memoryBoxData = { avatar: updatedNode.avatar };
+                        await createMemoryBox(updatedNode.id, memoryBoxData);
+                        console.log(
+                          `Created new MemoryBox and set avatar for ${updatedNode.name} (${updatedNode.id})`
+                        );
+                        showNotification(
+                          `Created a new MemoryBox and updated avatar for ${updatedNode.name}.`,
+                          "success"
+                        );
+                      } catch (createError) {
+                        console.error(
+                          `Failed to create MemoryBox for ${updatedNode.name} (${updatedNode.id}):`,
+                          createError
+                        );
+                        showNotification(
+                          `Failed to create MemoryBox for ${updatedNode.name}: ${createError.message}`,
+                          "error"
+                        );
+                        hasInvalidAvatar = true;
+                      }
+                    } else {
+                      console.error(
+                        `Failed to update avatar for ${updatedNode.name} (${updatedNode.id}):`,
+                        error
+                      );
+                      showNotification(
+                        `Failed to update avatar for ${updatedNode.name}: ${error.message}`,
+                        "error"
+                      );
+                      hasInvalidAvatar = true;
+                    }
                   }
                 }
               }
@@ -681,6 +710,10 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
         } catch (error) {
           console.error("Error during tree update:", error);
           chartInstance.updateData(originalTreeRef.current);
+          showNotification(
+            `Error during tree update: ${error.message}`,
+            "error"
+          );
           throw error;
         }
       });
@@ -777,6 +810,10 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
       };
     } catch (error) {
       console.error("Error rendering FamilyChart:", error);
+      showNotification(
+        `Error rendering FamilyChart: ${error.message}`,
+        "error"
+      );
     }
   }, [transformedTree, memoizedOnTreeUpdate, isAdmin]);
 
