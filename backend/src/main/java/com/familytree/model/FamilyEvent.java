@@ -15,26 +15,26 @@ public class FamilyEvent {
     private String id;
 
     @Column(nullable = false)
-    private String title; // e.g., "John's Birthday"
+    private String title;
 
     @Column(nullable = false)
-    private String eventType; // e.g., "BIRTHDAY", "WEDDING", "MEMORIAL"
+    private String eventType;
 
     @Column(nullable = false)
     private LocalDate eventDate;
 
-    private LocalDate reminderDate; // Date to send a reminder
+    private LocalDate reminderDate;
 
     @Column(nullable = false)
-    private boolean isMemorial; // Flag for memorial events
+    private boolean isMemorial;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "person_id", nullable = false)
-    private Person person; // The person associated with the event
+    private Person person;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
-    private User createdBy; // The user who created the event
+    private User createdBy;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;

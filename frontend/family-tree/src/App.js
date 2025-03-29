@@ -4,6 +4,7 @@ import FamilyTreeViewer from "./FamilyTreeViewer";
 import Login from "./Login";
 import Register from "./Register";
 import ChatPage from "./ChatPage";
+import EventsPage from "./EventsPage";
 import ProtectedRoute from "./ProtectedRoute";
 import { buildTree } from "./utils/treeUtils";
 import { fetchFamilyTree, createPerson } from "./nodeService";
@@ -85,9 +86,10 @@ const App = () => {
           <Link to="/chat" style={{ marginLeft: "10px", marginRight: "10px" }}>
             Go to Chat
           </Link>
-          <button onClick={handleLogout}>
-            Logout
-          </button>
+          <Link to="/events" style={{ marginRight: "10px" }}>
+            Manage Events
+          </Link>
+          <button onClick={handleLogout}>Logout</button>
         </div>
       )}
       {error && (
@@ -134,6 +136,14 @@ const App = () => {
         element={
           <ProtectedRoute>
             <ChatPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/events"
+        element={
+          <ProtectedRoute>
+            <EventsPage />
           </ProtectedRoute>
         }
       />
