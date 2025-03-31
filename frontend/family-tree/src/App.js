@@ -12,6 +12,7 @@ import { buildTree } from "./utils/treeUtils";
 import { fetchFamilyTree, createPerson } from "./services/nodeService";
 import { DEFAULT_ME_NODE } from "./constants/constants";
 import { useAuth } from "./context/AuthContext";
+import "./styles/App.css";
 
 const App = () => {
   const [tree, setTree] = useState([]);
@@ -98,92 +99,52 @@ const App = () => {
   };
 
   const FamilyTreePage = () => (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
+    <div className="app-page">
       {/* Sidebar */}
-      <div
-        style={{
-          width: "200px",
-          backgroundColor: "#333",
-          color: "#fff",
-          padding: "20px",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-        }}
-      >
-        <h2 style={{ marginTop: 0 }}>Family Tree</h2>
+      <aside className="app-sidebar">
+        <h2 className="app-sidebar-title">Family Tree</h2>
         {user && (
-          <div style={{ textAlign: "center", marginBottom: "20px" }}>
+          <div className="app-user-info">
             <p>
               Welcome, {user.username} ({user.role})
             </p>
           </div>
         )}
-        <nav>
-          <ul style={{ listStyleType: "none", padding: 0 }}>
-            <li style={{ marginBottom: "10px" }}>
-              <Link to="/" style={{ color: "#fff", textDecoration: "none" }}>
+        <nav className="app-nav">
+          <ul className="app-nav-list">
+            <li className="app-nav-item">
+              <Link to="/" className="app-nav-link">
                 Family Tree
               </Link>
             </li>
-            <li style={{ marginBottom: "10px" }}>
-              <Link
-                to="/chat"
-                style={{ color: "#fff", textDecoration: "none" }}
-              >
+            <li className="app-nav-item">
+              <Link to="/chat" className="app-nav-link">
                 Go to Chat
               </Link>
             </li>
-            <li style={{ marginBottom: "10px" }}>
-              <Link
-                to="/events"
-                style={{ color: "#fff", textDecoration: "none" }}
-              >
+            <li className="app-nav-item">
+              <Link to="/events" className="app-nav-link">
                 Manage Events
               </Link>
             </li>
-            <li style={{ marginBottom: "10px" }}>
-              <Link
-                to="/notable-records"
-                style={{ color: "#fff", textDecoration: "none" }}
-              >
+            <li className="app-nav-item">
+              <Link to="/notable-records" className="app-nav-link">
                 Manage Notable Records
               </Link>
             </li>
-            <li>
-              <button
-                onClick={handleLogout}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "#fff",
-                  cursor: "pointer",
-                  padding: 0,
-                }}
-              >
+            <li className="app-nav-item">
+              <button onClick={handleLogout} className="app-logout-button">
                 Logout
               </button>
             </li>
           </ul>
         </nav>
-      </div>
+      </aside>
 
       {/* Main Content */}
-      <div style={{ flex: 1, padding: "20px", textAlign: "center" }}>
-        {error && (
-          <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>
-        )}
-        <div
-          id="FamilyChart"
-          className="f3"
-          style={{
-            width: "100%",
-            height: "900px",
-            margin: "auto",
-            backgroundColor: "rgb(33, 33, 33)",
-            color: "#fff",
-          }}
-        >
+      <main className="app-main">
+        {error && <div className="app-error">{error}</div>}
+        <div id="FamilyChart" className="f3 app-chart-container">
           {isUnder18 && !isQuizPassed ? (
             <QuizComponent onQuizSuccess={handleQuizSuccess} />
           ) : tree.length > 0 ? (
@@ -193,10 +154,10 @@ const App = () => {
               isAdmin={user?.role === "ADMIN"}
             />
           ) : (
-            <div>Loading family tree...</div>
+            <div className="app-loading">Loading family tree...</div>
           )}
         </div>
-      </div>
+      </main>
     </div>
   );
 
