@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "../../services/axiosInstance";
 import { useAuth } from "../../context/AuthContext";
+import "./ChatPage.css";
 
 const ChatPage = () => {
   const [messages, setMessages] = useState([]);
@@ -84,47 +85,38 @@ const ChatPage = () => {
   };
 
   return (
-    <div style={{ padding: "20px", textAlign: "center" }}>
-      <h1>Family Chat</h1>
-      {error && (
-        <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>
-      )}
-      <div
-        style={{
-          border: "1px solid #ccc",
-          padding: "10px",
-          height: "400px",
-          overflowY: "scroll",
-          marginBottom: "20px",
-          backgroundColor: "#f9f9f9",
-        }}
-      >
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            style={{ marginBottom: "10px", textAlign: "left" }}
-          >
-            <strong>{message.senderUsername || "Unknown"}:</strong>{" "}
-            {message.content}{" "}
-            <em>({new Date(message.timestamp).toLocaleString()})</em>
-          </div>
-        ))}
+    <div className="cp-chat-page">
+      <div className="cp-chat-container">
+        <header className="cp-chat-header">
+          <h1 className="cp-chat-title">Family Chat</h1>
+        </header>
+        {error && <div className="cp-chat-error">{error}</div>}
+        <div className="cp-messages-container">
+          {messages.map((message) => (
+            <div key={message.id} className="cp-message-item">
+              <span className="cp-message-sender">
+                {message.senderUsername || "Unknown"}:
+              </span>{" "}
+              <span className="cp-message-content">{message.content}</span>{" "}
+              <span className="cp-message-timestamp">
+                ({new Date(message.timestamp).toLocaleString()})
+              </span>
+            </div>
+          ))}
+        </div>
+        <form onSubmit={handleSendMessage} className="cp-message-form">
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Type your message..."
+            className="cp-message-input"
+          />
+          <button type="submit" className="cp-send-button">
+            Send
+          </button>
+        </form>
       </div>
-      <form onSubmit={handleSendMessage}>
-        <input
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Type your message..."
-          style={{ width: "80%", padding: "5px" }}
-        />
-        <button
-          type="submit"
-          style={{ padding: "5px 10px", marginLeft: "10px" }}
-        >
-          Send
-        </button>
-      </form>
     </div>
   );
 };
