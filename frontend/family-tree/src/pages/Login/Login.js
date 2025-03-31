@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "../../services/axiosInstance";
 import { useAuth } from "../../context/AuthContext";
+import "./Login.css";
 
 const Login = () => {
   const [formData, setFormData] = useState({ username: "", password: "" });
@@ -48,39 +49,45 @@ const Login = () => {
   };
 
   return (
-    <div style={{ textAlign: "center", padding: "20px" }}>
-      <h2>Login</h2>
-      {error && (
-        <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>
-      )}
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Username: </label>
-          <input
-            type="text"
-            name="username"
-            value={formData.username}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div>
-          <label>Password: </label>
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <button type="submit" style={{ marginTop: "10px" }}>
-          Login
-        </button>
-      </form>
-      <p>
-        Don’t have an account? <a href="/register">Register here</a>
-      </p>
+    <div className="lp-login-page">
+      <div className="lp-login-container">
+        <h2 className="lp-login-title">Login</h2>
+        {error && <div className="lp-login-error">{error}</div>}
+        <form onSubmit={handleSubmit} className="lp-login-form">
+          <div className="lp-form-group">
+            <label htmlFor="username">Username</label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              required
+              className="lp-login-input"
+              placeholder="Enter username"
+            />
+          </div>
+          <div className="lp-form-group">
+            <label htmlFor="password">Password</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              className="lp-login-input"
+              placeholder="Enter password"
+            />
+          </div>
+          <button type="submit" className="lp-submit-button">
+            Login
+          </button>
+        </form>
+        <p className="lp-register-link">
+          Don’t have an account? <a href="/register">Register here</a>
+        </p>
+      </div>
     </div>
   );
 };
