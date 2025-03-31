@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { fetchRandomQuiz } from "../../services/nodeService";
+import "./QuizComponent.css";
 
 const QuizComponent = ({ onQuizSuccess }) => {
   const [quiz, setQuiz] = useState(null);
@@ -42,80 +43,83 @@ const QuizComponent = ({ onQuizSuccess }) => {
   };
 
   if (!quiz) {
-    return <div>Loading quiz...</div>;
+    return <div className="qc-loading">Loading quiz...</div>;
   }
 
   return (
-    <div style={{ textAlign: "center", padding: "20px" }}>
-      <h2>Family History Quiz</h2>
-      <p>You must answer this question correctly to view the family tree.</p>
-      {error && (
-        <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>
-      )}
-      {message && (
-        <div
-          style={{
-            color: message.includes("Correct") ? "green" : "red",
-            marginBottom: "10px",
-          }}
-        >
-          {message}
-        </div>
-      )}
-      <form onSubmit={handleSubmit}>
-        <p>{quiz.question}</p>
-        <div>
-          <label>
-            <input
-              type="radio"
-              name="option"
-              value="1"
-              checked={selectedOption === "1"}
-              onChange={(e) => setSelectedOption(e.target.value)}
-            />
-            {quiz.option1}
-          </label>
-        </div>
-        <div>
-          <label>
-            <input
-              type="radio"
-              name="option"
-              value="2"
-              checked={selectedOption === "2"}
-              onChange={(e) => setSelectedOption(e.target.value)}
-            />
-            {quiz.option2}
-          </label>
-        </div>
-        <div>
-          <label>
-            <input
-              type="radio"
-              name="option"
-              value="3"
-              checked={selectedOption === "3"}
-              onChange={(e) => setSelectedOption(e.target.value)}
-            />
-            {quiz.option3}
-          </label>
-        </div>
-        <div>
-          <label>
-            <input
-              type="radio"
-              name="option"
-              value="4"
-              checked={selectedOption === "4"}
-              onChange={(e) => setSelectedOption(e.target.value)}
-            />
-            {quiz.option4}
-          </label>
-        </div>
-        <button type="submit" style={{ marginTop: "10px" }}>
-          Submit
-        </button>
-      </form>
+    <div className="qc-quiz-overlay">
+      <div className="qc-quiz-container">
+        <h2 className="qc-quiz-title">Family History Quiz</h2>
+        <p className="qc-quiz-instruction">
+          You must answer this question correctly to view the family tree.
+        </p>
+        {error && <div className="qc-quiz-error">{error}</div>}
+        {message && (
+          <div
+            className={
+              message.includes("Correct") ? "qc-quiz-success" : "qc-quiz-error"
+            }
+          >
+            {message}
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="qc-quiz-form">
+          <p className="qc-quiz-question">{quiz.question}</p>
+          <div className="qc-option-group">
+            <label className="qc-option-label">
+              <input
+                type="radio"
+                name="option"
+                value="1"
+                checked={selectedOption === "1"}
+                onChange={(e) => setSelectedOption(e.target.value)}
+                className="qc-radio-input"
+              />
+              <span className="qc-radio-checkmark"></span>
+              {quiz.option1}
+            </label>
+            <label className="qc-option-label">
+              <input
+                type="radio"
+                name="option"
+                value="2"
+                checked={selectedOption === "2"}
+                onChange={(e) => setSelectedOption(e.target.value)}
+                className="qc-radio-input"
+              />
+              <span className="qc-radio-checkmark"></span>
+              {quiz.option2}
+            </label>
+            <label className="qc-option-label">
+              <input
+                type="radio"
+                name="option"
+                value="3"
+                checked={selectedOption === "3"}
+                onChange={(e) => setSelectedOption(e.target.value)}
+                className="qc-radio-input"
+              />
+              <span className="qc-radio-checkmark"></span>
+              {quiz.option3}
+            </label>
+            <label className="qc-option-label">
+              <input
+                type="radio"
+                name="option"
+                value="4"
+                checked={selectedOption === "4"}
+                onChange={(e) => setSelectedOption(e.target.value)}
+                className="qc-radio-input"
+              />
+              <span className="qc-radio-checkmark"></span>
+              {quiz.option4}
+            </label>
+          </div>
+          <button type="submit" className="qc-submit-button">
+            Submit
+          </button>
+        </form>
+      </div>
     </div>
   );
 };
