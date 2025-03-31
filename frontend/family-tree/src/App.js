@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { Routes, Route, Navigate, useNavigate, Link } from "react-router-dom";
-import FamilyTreeViewer from "./FamilyTreeViewer";
-import Login from "./Login";
-import Register from "./Register";
-import ChatPage from "./ChatPage";
-import EventsPage from "./EventsPage";
-import NotableRecordsPage from "./NotableRecordsPage";
-import QuizComponent from "./QuizComponent";
-import ProtectedRoute from "./ProtectedRoute";
+import FamilyTreeViewer from "./components/FamilyTreeViewer/FamilyTreeViewer";
+import Login from "./pages/Login/Login";
+import Register from "./pages/Register/Register";
+import ChatPage from "./pages/ChatPage/ChatPage";
+import EventsPage from "./pages/EventsPage/EventsPage";
+import NotableRecordsPage from "./pages/NotableRecordsPage/NotableRecordsPage";
+import QuizComponent from "./components/QuizComponent/QuizComponent";
+import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 import { buildTree } from "./utils/treeUtils";
-import { fetchFamilyTree, createPerson } from "./nodeService";
-import { DEFAULT_ME_NODE } from "./constants";
-import { useAuth } from "./AuthContext";
+import { fetchFamilyTree, createPerson } from "./services/nodeService";
+import { DEFAULT_ME_NODE } from "./constants/constants";
+import { useAuth } from "./context/AuthContext";
 
 const App = () => {
   const [tree, setTree] = useState([]);
@@ -76,7 +76,6 @@ const App = () => {
   };
 
   const calculateAge = (dateOfBirth) => {
-    console.log("AGE: " + dateOfBirth);
     if (!dateOfBirth) return 0;
     const dob = new Date(dateOfBirth);
     const currentDate = new Date("2025-03-31");
@@ -86,10 +85,8 @@ const App = () => {
       monthDiff < 0 ||
       (monthDiff === 0 && currentDate.getDate() < dob.getDate())
     ) {
-      console.log("AGE: " + (age - 1));
       return age - 1;
     }
-    console.log("AGE: " + age);
     return age;
   };
 

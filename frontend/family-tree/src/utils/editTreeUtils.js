@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 import f3 from "family-chart";
-import { VIEW_FIELDS, EDIT_FIELDS } from "../constants";
+import { VIEW_FIELDS, EDIT_FIELDS } from "../constants/constants";
 
 export const closeFormContainer = () => {
   const formContainer = document.querySelector(".f3-form-cont");

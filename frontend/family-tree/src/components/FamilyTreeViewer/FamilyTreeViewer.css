@@ -1,4 +1,4 @@
-@import "../node_modules/family-chart/dist/styles/family-chart.css";
+@import "../../../node_modules/family-chart/dist/styles/family-chart.css";
 
 .family-tree-container {
   position: static !important;

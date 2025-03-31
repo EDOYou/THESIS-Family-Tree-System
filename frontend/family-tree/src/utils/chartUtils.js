@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 import f3 from "family-chart";
-import { CHART_DIMENSIONS, FAMILY_CHART_CONTAINER_ID } from "../constants";
+import { CHART_DIMENSIONS, FAMILY_CHART_CONTAINER_ID } from "../constants/constants";
 import { logDebug } from "./debugUtils";
 
 export const initializeChart = (

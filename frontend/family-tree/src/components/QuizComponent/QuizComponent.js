@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { fetchRandomQuiz } from "./nodeService";
+import { fetchRandomQuiz } from "../../services/nodeService";
 
 const QuizComponent = ({ onQuizSuccess }) => {
   const [quiz, setQuiz] = useState(null);

@@ -4,7 +4,7 @@ import {
   addChild,
   addSpouse,
   deletePerson,
-} from "../nodeService";
+} from "../services/nodeService";
 import { showNotification } from "./notificationUtils";
 import { handleAvatarUpdate } from "./avatarUtils";
 

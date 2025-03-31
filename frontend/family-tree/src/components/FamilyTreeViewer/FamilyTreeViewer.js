@@ -5,17 +5,17 @@ import * as d3 from "d3";
 
 // Local Styles and Utilities
 import "./FamilyTreeViewer.css";
-import { transformTree } from "./utils/treeUtils";
-import { initializeChart, configureCard } from "./utils/chartUtils";
-import { showNotification } from "./utils/notificationUtils";
-import { logDebug } from "./utils/debugUtils";
-import { RELATIONSHIP_TYPES, ADD_REL_LABELS } from "./constants";
+import { transformTree } from "../../utils/treeUtils";
+import { initializeChart, configureCard } from "../../utils/chartUtils";
+import { showNotification } from "../../utils/notificationUtils";
+import { logDebug } from "../../utils/debugUtils";
+import { RELATIONSHIP_TYPES, ADD_REL_LABELS } from "../../constants/constants";
 import {
   configureEditTreeForm,
   configureAddRelative,
   configureEditTree,
-} from "./utils/editTreeUtils";
-import { handleTreeUpdate } from "./utils/treeUpdateUtils";
+} from "../../utils/editTreeUtils";
+import { handleTreeUpdate } from "../../utils/treeUpdateUtils";
 
 const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
   const containerRef = useRef(null);

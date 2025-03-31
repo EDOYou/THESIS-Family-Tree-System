@@ -1,4 +1,4 @@
-import { updateAvatar, createMemoryBox } from "../nodeService";
+import { updateAvatar, createMemoryBox } from "../services/nodeService";
 import { showNotification } from "./notificationUtils";
 
 export const handleAvatarUpdate = async ({
