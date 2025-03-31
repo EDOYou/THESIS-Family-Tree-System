@@ -28,21 +28,17 @@ const Login = () => {
         headers: { Authorization: authHeader },
       });
 
+      console.log("User response from /api/auth/me:", userResponse.data);
+
       const userData = {
         username: userResponse.data.username,
         role: userResponse.data.role,
+        dateOfBirth: userResponse.data.dateOfBirth,
       };
 
       login(userData);
       localStorage.setItem("authHeader", authHeader);
-      console.log(
-        "After login - user in localStorage:",
-        localStorage.getItem("user")
-      );
-      console.log(
-        "After login - authHeader in localStorage:",
-        localStorage.getItem("authHeader")
-      );
+      console.log("User data set in login:", userData);
       setError(null);
       navigate("/");
     } catch (err) {

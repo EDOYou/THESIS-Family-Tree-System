@@ -2,6 +2,17 @@ import axios from "./axiosInstance";
 
 const API_URL = "/api/persons";
 const MEMORY_BOX_API_URL = "/api/memory-boxes";
+const QUIZ_URL = "/api/quizzes";
+
+export const fetchRandomQuiz = async () => {
+  try {
+    const response = await axios.get(`${QUIZ_URL}/random`);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching random quiz:", error);
+    throw new Error("Failed to fetch random quiz: " + error.message);
+  }
+};
 
 export const fetchFamilyTree = async () => {
   try {

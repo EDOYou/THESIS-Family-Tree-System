@@ -26,14 +26,18 @@ public class User {
     @Column(nullable = false, length = 20)
     private String role;
 
+    @Column(nullable = false)
+    private String dateOfBirth;
+
     public User() {
         this.role = "USER";
     }
 
-    public User(String username, String email, String password, String role) {
+    public User(String username, String email, String password, String role, String dateOfBirth) {
         this.username = username;
         this.email = email;
         this.password = password;
         this.role = role != null ? role : "USER";
+        this.dateOfBirth = dateOfBirth;
     }
 }

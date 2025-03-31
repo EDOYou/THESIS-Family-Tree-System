@@ -6,6 +6,7 @@ import Register from "./Register";
 import ChatPage from "./ChatPage";
 import EventsPage from "./EventsPage";
 import NotableRecordsPage from "./NotableRecordsPage";
+import QuizComponent from "./QuizComponent";
 import ProtectedRoute from "./ProtectedRoute";
 import { buildTree } from "./utils/treeUtils";
 import { fetchFamilyTree, createPerson } from "./nodeService";
@@ -16,6 +17,7 @@ const App = () => {
   const [tree, setTree] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [error, setError] = useState(null);
+  const [isQuizPassed, setIsQuizPassed] = useState(false);
   const debug = false;
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -61,7 +63,7 @@ const App = () => {
     if (user) {
       loadTree();
     }
-  }, [refreshKey, debug, user]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [refreshKey, debug, user]);
 
   const handleTreeUpdate = () => {
     setRefreshKey((prev) => prev + 1);
@@ -71,6 +73,31 @@ const App = () => {
   const handleLogout = () => {
     logout();
     navigate("/login");
+  };
+
+  const calculateAge = (dateOfBirth) => {
+    console.log("AGE: " + dateOfBirth);
+    if (!dateOfBirth) return 0;
+    const dob = new Date(dateOfBirth);
+    const currentDate = new Date("2025-03-31");
+    const age = currentDate.getFullYear() - dob.getFullYear();
+    const monthDiff = currentDate.getMonth() - dob.getMonth();
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && currentDate.getDate() < dob.getDate())
+    ) {
+      console.log("AGE: " + (age - 1));
+      return age - 1;
+    }
+    console.log("AGE: " + age);
+    return age;
+  };
+
+  const userAge = user && user.dateOfBirth ? calculateAge(user.dateOfBirth) : 0;
+  const isUnder18 = userAge > 0 && userAge < 18;
+
+  const handleQuizSuccess = () => {
+    setIsQuizPassed(true);
   };
 
   const FamilyTreePage = () => (
@@ -160,7 +187,9 @@ const App = () => {
             color: "#fff",
           }}
         >
-          {tree.length > 0 ? (
+          {isUnder18 && !isQuizPassed ? (
+            <QuizComponent onQuizSuccess={handleQuizSuccess} />
+          ) : tree.length > 0 ? (
             <FamilyTreeViewer
               tree={tree}
               onTreeUpdate={handleTreeUpdate}

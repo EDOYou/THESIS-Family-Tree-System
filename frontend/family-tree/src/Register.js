@@ -8,6 +8,7 @@ const Register = () => {
     email: "",
     password: "",
     role: "USER",
+    dateOfBirth: "",
   });
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -60,6 +61,16 @@ const Register = () => {
             type="password"
             name="password"
             value={formData.password}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div>
+          <label>Date of Birth: </label>
+          <input
+            type="date"
+            name="dateOfBirth"
+            value={formData.dateOfBirth}
             onChange={handleChange}
             required
           />

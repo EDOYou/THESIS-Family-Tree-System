@@ -58,6 +58,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/events/**").hasAnyRole("USER", "ADMIN")
                         .requestMatchers("/api/notable-records/**").hasAnyRole("USER", "ADMIN")
                         .requestMatchers("/api/persons/{personId}/notable-records").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/api/quizzes/random").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/api/quizzes/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .httpBasic(httpBasic -> httpBasic.realmName("FamilyTree"));
