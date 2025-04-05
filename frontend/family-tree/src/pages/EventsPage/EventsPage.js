@@ -59,6 +59,7 @@ const EventList = ({ events, reminders, onDelete }) => (
                 {event.personName} on{" "}
                 {new Date(event.eventDate).toLocaleDateString()}
                 {event.isMemorial && " (Memorial)"}
+                {" - Created by: " + event.createdByUsername}
               </span>
             </li>
           ))}
@@ -85,6 +86,7 @@ const EventList = ({ events, reminders, onDelete }) => (
                   </span>
                 )}
                 {event.isMemorial && " (Memorial)"}
+                {" - Created by: " + event.createdByUsername}
               </span>
               <button
                 onClick={() => onDelete(event.id)}

@@ -35,12 +35,8 @@ public class FamilyEventController {
 
     @GetMapping
     public ResponseEntity<List<FamilyEventDTO>> getAllEvents() {
-        log.info("Fetching all family events for the authenticated user");
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + username));
-
-        List<FamilyEvent> events = familyEventRepository.findByCreatedByOrderByEventDateAsc(user);
+        log.info("Fetching all family events");
+        List<FamilyEvent> events = familyEventRepository.findAllByOrderByEventDateAsc();
         List<FamilyEventDTO> eventDTOs = events.stream()
                 .map(FamilyEventDTO::new)
                 .collect(Collectors.toList());
@@ -50,12 +46,8 @@ public class FamilyEventController {
 
     @GetMapping("/reminders")
     public ResponseEntity<List<FamilyEventDTO>> getReminders() {
-        log.info("Fetching family events with active reminders for the authenticated user");
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + username));
-
-        List<FamilyEvent> events = familyEventRepository.findByReminderDateLessThanEqualAndCreatedByOrderByEventDateAsc(LocalDate.now(), user);
+        log.info("Fetching all family events with active reminders");
+        List<FamilyEvent> events = familyEventRepository.findByReminderDateLessThanEqualOrderByEventDateAsc(LocalDate.now());
         List<FamilyEventDTO> eventDTOs = events.stream()
                 .map(FamilyEventDTO::new)
                 .collect(Collectors.toList());
