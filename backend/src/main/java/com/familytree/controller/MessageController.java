@@ -8,6 +8,9 @@ import com.familytree.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +29,9 @@ public class MessageController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     @GetMapping
     public ResponseEntity<List<MessageDTO>> getAllMessages() {
@@ -56,6 +62,39 @@ public class MessageController {
         Message savedMessage = messageRepository.save(message);
         MessageDTO messageDTO = new MessageDTO(savedMessage);
         log.info("Created message with ID: {}", savedMessage.getId());
+
+        messagingTemplate.convertAndSend("/topic/messages", messageDTO);
+
         return ResponseEntity.ok(messageDTO);
+    }
+
+    @MessageMapping("/chat.sendMessage")
+    @Transactional
+    public void sendMessage(@Payload MessageDTO messageDTO) {
+        log.info("Received WebSocket message with content: {}", messageDTO.getContent());
+        if (messageDTO.getContent() == null || messageDTO.getContent().trim().isEmpty()) {
+            log.warn("Message content is empty");
+            return;
+        }
+
+        String username = messageDTO.getSenderUsername();
+        if (username == null || username.trim().isEmpty()) {
+            log.warn("Sender username is missing in the message");
+            return;
+        }
+
+        User sender = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalStateException("User not found: " + username));
+
+        Message message = new Message();
+        message.setContent(messageDTO.getContent());
+        message.setSender(sender);
+        message.setConversationId(messageDTO.getConversationId());
+
+        Message savedMessage = messageRepository.save(message);
+        MessageDTO savedMessageDTO = new MessageDTO(savedMessage);
+        log.info("Broadcasting message with ID: {}", savedMessage.getId());
+
+        messagingTemplate.convertAndSend("/topic/messages", savedMessageDTO);
     }
 }

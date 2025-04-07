@@ -2,13 +2,16 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "../../services/axiosInstance";
 import { useAuth } from "../../context/AuthContext";
+import SockJS from "sockjs-client";
+import Stomp from "stompjs";
 import "./ChatPage.css";
 
 const ChatPage = () => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [error, setError] = useState(null);
-  const { logout } = useAuth();
+  const [stompClient, setStompClient] = useState(null);
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,9 +45,38 @@ const ChatPage = () => {
     };
 
     fetchMessages();
-    const interval = setInterval(fetchMessages, 5000);
 
-    return () => clearInterval(interval);
+    const socket = new SockJS("http://localhost:8080/ws");
+    const client = Stomp.over(socket);
+    client.connect(
+      {},
+      (frame) => {
+        console.log("Connected to WebSocket:", frame);
+        setStompClient(client);
+
+        client.subscribe("/topic/messages", (message) => {
+          const receivedMessage = JSON.parse(message.body);
+          setMessages((prevMessages) => {
+            if (prevMessages.some((msg) => msg.id === receivedMessage.id)) {
+              return prevMessages;
+            }
+            return [...prevMessages, receivedMessage];
+          });
+        });
+      },
+      (error) => {
+        console.error("WebSocket connection error:", error);
+        setError("Failed to connect to chat server.");
+      }
+    );
+
+    return () => {
+      if (client && client.connected) {
+        client.disconnect(() => {
+          console.log("Disconnected from WebSocket");
+        });
+      }
+    };
   }, [logout, navigate]);
 
   const handleSendMessage = async (e) => {
@@ -60,18 +92,25 @@ const ChatPage = () => {
         return;
       }
 
-      const response = await axios.post(
-        "/api/messages",
-        { content: newMessage },
-        {
-          headers: {
-            Authorization: authHeader,
-          },
-        }
-      );
-      setMessages([...messages, response.data]);
-      setNewMessage("");
-      setError(null);
+      if (!user || !user.username) {
+        setError("User information not available. Please log in again.");
+        logout();
+        navigate("/login");
+        return;
+      }
+
+      const message = {
+        content: newMessage,
+        senderUsername: user.username,
+      };
+
+      if (stompClient && stompClient.connected) {
+        stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(message));
+        setNewMessage("");
+        setError(null);
+      } else {
+        setError("Chat server is not connected. Please try again later.");
+      }
     } catch (error) {
       console.error("Error sending message:", error);
       if (error.response && error.response.status === 401) {
