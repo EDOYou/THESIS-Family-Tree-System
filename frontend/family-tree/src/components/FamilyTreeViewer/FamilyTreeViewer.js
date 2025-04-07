@@ -64,7 +64,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
       configureCard(cardInstance, isAdmin);
 
       const editTreeInstance = chartInstance.editTree();
-      console.log("editTreeInstance:", editTreeInstance);
       if (
         !editTreeInstance ||
         typeof editTreeInstance.openFormWithId !== "function"

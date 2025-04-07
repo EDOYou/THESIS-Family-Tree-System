@@ -25,7 +25,6 @@ public class Person {
     private String deathDate;
     private String birthPlace;
     private String deathPlace;
-    private boolean hasSubTree;
 
     @ElementCollection
     private List<String> spouses = new ArrayList<>();

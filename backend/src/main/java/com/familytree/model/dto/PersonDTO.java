@@ -1,5 +1,7 @@
 package com.familytree.model.dto;
 
+import com.familytree.model.Gender;
+import com.familytree.model.MemoryBox;
 import com.familytree.model.Person;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,13 +20,13 @@ public class PersonDTO {
     private String deathDate;
     private String birthPlace;
     private String deathPlace;
-    private Boolean hasSubTree;
-    private String gender;
+    private Gender gender;
     private List<String> spouses = new ArrayList<>();
     private String fatherId;
     private String motherId;
     private List<String> children = new ArrayList<>();
     private String avatar;
+    private MemoryBox memoryBox;
 
     public PersonDTO() {}
 
@@ -37,12 +39,12 @@ public class PersonDTO {
         this.deathDate = person.getDeathDate();
         this.birthPlace = person.getBirthPlace();
         this.deathPlace = person.getDeathPlace();
-        this.hasSubTree = person.isHasSubTree();
-        this.gender = person.getGender() != null ? person.getGender().name() : null;
+        this.gender = person.getGender();
         this.spouses = person.getSpouses() != null ? new ArrayList<>(person.getSpouses()) : new ArrayList<>();
         this.fatherId = person.getFatherId();
         this.motherId = person.getMotherId();
         this.children = person.getChildren() != null ? new ArrayList<>(person.getChildren()) : new ArrayList<>();
         this.avatar = person.getMemoryBox() != null ? person.getMemoryBox().getAvatar() : null;
+        this.memoryBox = person.getMemoryBox() != null ? person.getMemoryBox() : null;
     }
 }
