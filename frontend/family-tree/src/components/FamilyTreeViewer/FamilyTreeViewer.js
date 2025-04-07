@@ -61,21 +61,33 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
         cardInstanceRef
       ));
 
-      configureCard(cardInstance);
+      configureCard(cardInstance, isAdmin);
 
       const editTreeInstance = chartInstance.editTree();
+      console.log("editTreeInstance:", editTreeInstance);
+      if (
+        !editTreeInstance ||
+        typeof editTreeInstance.openFormWithId !== "function"
+      ) {
+        console.error(
+          "editTreeInstance.openFormWithId is not a function or editTreeInstance is undefined"
+        );
+        return;
+      }
       editTreeInstanceRef.current = editTreeInstance;
 
-      // console.log("EditTreeInstance initialized:", editTreeInstance);
+      if (!isAdmin) {
+        editTreeInstance.setNoEdit();
+      }
 
-      // Configure editTreeInstance
-      configureEditTreeForm(editTreeInstance);
+      configureEditTreeForm(editTreeInstance, isAdmin);
       configureAddRelative(editTreeInstance, isAdmin, RELATIONSHIP_TYPES);
       configureEditTree(
         editTreeInstance,
         cardInstance,
         transformedTree,
-        ADD_REL_LABELS
+        ADD_REL_LABELS,
+        isAdmin
       );
 
       editTreeInstance.setOnChange(() =>

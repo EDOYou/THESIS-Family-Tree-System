@@ -1,6 +1,9 @@
 import * as d3 from "d3";
 import f3 from "family-chart";
-import { CHART_DIMENSIONS, FAMILY_CHART_CONTAINER_ID } from "../constants/constants";
+import {
+  CHART_DIMENSIONS,
+  FAMILY_CHART_CONTAINER_ID,
+} from "../constants/constants";
 import { logDebug } from "./debugUtils";
 
 export const initializeChart = (
@@ -43,9 +46,24 @@ export const initializeChart = (
   }
 };
 
-export const configureCard = (cardInstance) => {
+export const configureCard = (cardInstance, isAdmin) => {
   try {
     cardInstance.setCardDisplay((d) => d.data?.data?.name || "Unnamed");
+
+    cardInstance.cardEditForm = isAdmin;
+    cardInstance
+      .setCardDim({
+        width: 220,
+        height: 70,
+        text_x: 75,
+        text_y: 15,
+        img_w: 60,
+        img_h: 60,
+        img_x: 5,
+        img_y: 5,
+      })
+      .setMiniTree(true)
+      .setLinkBreak(false);
 
     cardInstance.onCardUpdate = function (d) {
       const cardNode = d3.select(this);

@@ -117,14 +117,16 @@ export const configureEditTree = (
   editTreeInstance,
   cardInstance,
   transformedTree,
-  addRelLabels
+  addRelLabels,
+  isAdmin
 ) => {
-  editTreeInstance.setEditFirst(true);
+  editTreeInstance.setEditFirst(false);
+
   editTreeInstance.setAddRelLabels(addRelLabels);
   editTreeInstance.setCardClickOpen(cardInstance);
   editTreeInstance.fixed();
 
-  if (transformedTree.length > 0) {
+  if (isAdmin && transformedTree.length > 0) {
     editTreeInstance.openFormWithId(transformedTree[0].id);
   }
 };
