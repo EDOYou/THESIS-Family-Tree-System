@@ -62,11 +62,3 @@ export const RELATIONSHIP_TYPES = [
   "son",
   "daughter",
 ];
-
-export const ADD_REL_LABELS = {
-  father: "Add Father",
-  mother: "Add Mother",
-  spouse: "Add Spouse",
-  son: "Add Son",
-  daughter: "Add Daughter",
-};

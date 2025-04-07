@@ -20,7 +20,7 @@ export const configureEditTreeForm = (editTreeInstance) => {
       datum._new_rel_data ||
       d3.select(this.form_cont).classed("edit-mode");
 
-    // console.log("Opening form, isEditMode:", isEditMode); // Commented out for production
+    // console.log("Opening form, isEditMode:", isEditMode);
 
     this.setFields(isEditMode ? EDIT_FIELDS : VIEW_FIELDS);
     originalOpen(datum);
@@ -31,7 +31,7 @@ export const configureEditTreeForm = (editTreeInstance) => {
     const form = d3.select(editTreeInstance.form_cont).select("form");
     if (form.node()) {
       const isEditable = form.classed("editable");
-      // console.log("Form state changed, isEditable:", isEditable); // Commented out for production
+      // console.log("Form state changed, isEditable:", isEditable);
 
       d3.select(editTreeInstance.form_cont).classed("edit-mode", isEditable);
       editTreeInstance.setFields(isEditable ? EDIT_FIELDS : VIEW_FIELDS);
@@ -46,11 +46,11 @@ export const configureAddRelative = (editTreeInstance, isAdmin, relTypes) => {
       return;
     }
 
-    // console.log("=== Add Relative Initiated ==="); // Commented out for production
-    // console.log("Datum passed to addRelative:", JSON.stringify(datum, null, 2)); // Commented out for production
+    // console.log("=== Add Relative Initiated ===");
+    // console.log("Datum passed to addRelative:", JSON.stringify(datum, null, 2));
 
     if (editTreeInstance.isAddingRelative()) {
-      // console.log("AddRelative is active, cancelling previous action..."); // Commented out for production
+      // console.log("AddRelative is active, cancelling previous action...");
       const addRelativeInstance = editTreeInstance.addRelativeInstance;
       if (
         addRelativeInstance &&
@@ -117,12 +117,9 @@ export const configureEditTree = (
   editTreeInstance,
   cardInstance,
   transformedTree,
-  addRelLabels,
   isAdmin
 ) => {
   editTreeInstance.setEditFirst(false);
-
-  editTreeInstance.setAddRelLabels(addRelLabels);
   editTreeInstance.setCardClickOpen(cardInstance);
   editTreeInstance.fixed();
 

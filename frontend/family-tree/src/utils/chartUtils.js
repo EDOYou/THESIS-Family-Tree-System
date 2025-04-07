@@ -48,7 +48,12 @@ export const initializeChart = (
 
 export const configureCard = (cardInstance, isAdmin) => {
   try {
-    cardInstance.setCardDisplay((d) => d.data?.data?.name || "Unnamed");
+    cardInstance.setCardDisplay((d) => {
+      if (d.data?._new_rel_data) {
+        return d.data._new_rel_data.label || "Add Relative";
+      }
+      return d.data?.data?.name || "Unnamed";
+    });
 
     cardInstance.cardEditForm = isAdmin;
     cardInstance
@@ -67,20 +72,37 @@ export const configureCard = (cardInstance, isAdmin) => {
 
     cardInstance.onCardUpdate = function (d) {
       const cardNode = d3.select(this);
-      const name = d.data?.data?.name || "Unnamed";
 
-      const textElement = cardNode.select(".card-inner text");
-      if (textElement.empty()) {
-        console.warn("No text element found inside .card-inner, creating one");
-        cardNode
-          .select(".card-inner")
-          .append("text")
-          .attr("x", 10)
-          .attr("y", 20)
-          .attr("fill", "#fff")
-          .text(name);
+      if (d.data?._new_rel_data) {
+        const textElement = cardNode.select(".card-inner text");
+        if (textElement.empty()) {
+          cardNode
+            .select(".card-inner")
+            .append("text")
+            .attr("x", 10)
+            .attr("y", 20)
+            .attr("fill", "#fff")
+            .text(d.data._new_rel_data.label || "Add Relative");
+        } else {
+          textElement.text(d.data._new_rel_data.label || "Add Relative");
+        }
       } else {
-        textElement.text(name);
+        const name = d.data?.data?.name || "Unnamed";
+        const textElement = cardNode.select(".card-inner text");
+        if (textElement.empty()) {
+          console.warn(
+            "No text element found inside .card-inner, creating one"
+          );
+          cardNode
+            .select(".card-inner")
+            .append("text")
+            .attr("x", 10)
+            .attr("y", 20)
+            .attr("fill", "#fff")
+            .text(name);
+        } else {
+          textElement.text(name);
+        }
       }
     };
   } catch (error) {

@@ -9,7 +9,7 @@ import { transformTree } from "../../utils/treeUtils";
 import { initializeChart, configureCard } from "../../utils/chartUtils";
 import { showNotification } from "../../utils/notificationUtils";
 import { logDebug } from "../../utils/debugUtils";
-import { RELATIONSHIP_TYPES, ADD_REL_LABELS } from "../../constants/constants";
+import { RELATIONSHIP_TYPES } from "../../constants/constants";
 import {
   configureEditTreeForm,
   configureAddRelative,
@@ -86,7 +86,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
         editTreeInstance,
         cardInstance,
         transformedTree,
-        ADD_REL_LABELS,
         isAdmin
       );
 
