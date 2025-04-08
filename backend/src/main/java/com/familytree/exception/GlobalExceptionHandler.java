@@ -61,4 +61,19 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Void> handleInvalidMessageException(InvalidMessageException e) {
         return ResponseEntity.status(400).build();
     }
+
+    @ExceptionHandler(NotableRecordNotFoundException.class)
+    public ResponseEntity<Void> handleNotableRecordNotFoundException(NotableRecordNotFoundException e) {
+        return ResponseEntity.status(404).build();
+    }
+
+    @ExceptionHandler(InvalidNotableRecordException.class)
+    public ResponseEntity<Void> handleInvalidNotableRecordException(InvalidNotableRecordException e) {
+        return ResponseEntity.status(400).build();
+    }
+
+    @ExceptionHandler(UnauthorizedNotableRecordAccessException.class)
+    public ResponseEntity<Void> handleUnauthorizedNotableRecordAccessException(UnauthorizedNotableRecordAccessException e) {
+        return ResponseEntity.status(403).build();
+    }
 }
