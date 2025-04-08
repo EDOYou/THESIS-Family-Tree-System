@@ -1,21 +1,27 @@
 package com.familytree.service;
 
+import com.familytree.exception.UnauthenticatedException;
+import com.familytree.exception.UserNotFoundException;
 import com.familytree.model.User;
 import com.familytree.model.dto.AuthResponse;
 import com.familytree.model.dto.RegisterRequest;
 import com.familytree.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class AuthService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
@@ -34,5 +40,23 @@ public class AuthService {
 
         userRepository.save(user);
         return new AuthResponse(user.getUsername(), user.getRole());
+    }
+
+    public User getCurrentUser(Authentication authentication) {
+        log.info("Get current user: {}", authentication);
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new UnauthenticatedException("User is not authenticated");
+        }
+
+        String username = authentication.getName();
+        return userRepository.findByUsername(username)
+                .map(user -> {
+                    log.info("Found user: {}", user);
+                    return user;
+                })
+                .orElseThrow(() -> {
+                    log.warn("User not found for username: {}", username);
+                    return new UserNotFoundException("User not found for username: " + username);
+                });
     }
 }

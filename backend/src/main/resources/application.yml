@@ -9,5 +9,5 @@ spring:
       maximum-pool-size: 5
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     database-platform: org.hibernate.dialect.PostgreSQLDialect
