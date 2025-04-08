@@ -56,4 +56,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleRuntimeException(RuntimeException e) {
         return ResponseEntity.status(400).body(e.getMessage());
     }
+
+    @ExceptionHandler(InvalidMessageException.class)
+    public ResponseEntity<Void> handleInvalidMessageException(InvalidMessageException e) {
+        return ResponseEntity.status(400).build();
+    }
 }

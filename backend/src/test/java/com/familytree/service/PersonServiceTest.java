@@ -64,7 +64,7 @@ public class PersonServiceTest {
     }
 
     @Test
-    public void testCreatePerson_Success_GeneratedId() {
+    public void testCreatePersonSuccessGeneratedId() {
         Person newPerson = new Person();
         newPerson.setName("New Person");
         newPerson.setGender(Gender.M);
@@ -86,7 +86,7 @@ public class PersonServiceTest {
     }
 
     @Test
-    public void testCreatePerson_Success_WithIdAndMemoryBox() {
+    public void testCreatePersonSuccessWithIdAndMemoryBox() {
         String customId = UUID.randomUUID().toString();
         Person newPerson = new Person();
         newPerson.setId(customId);
@@ -107,7 +107,7 @@ public class PersonServiceTest {
     }
 
     @Test
-    public void testSaveOrUpdatePerson_Success() {
+    public void testSaveOrUpdatePersonSuccess() {
         Person existingPerson = new Person();
         existingPerson.setId(personId);
         existingPerson.setName("Old Name");
@@ -130,7 +130,7 @@ public class PersonServiceTest {
     }
 
     @Test
-    public void testSaveOrUpdatePerson_NotFound() {
+    public void testSaveOrUpdatePersonNotFound() {
         Person updatedPerson = new Person();
         updatedPerson.setName("Updated Name");
 
@@ -141,7 +141,7 @@ public class PersonServiceTest {
     }
 
     @Test
-    public void testSaveOrUpdatePerson_WithMemoryBoxAvatar() {
+    public void testSaveOrUpdatePersonWithMemoryBoxAvatar() {
         Person existingPerson = new Person();
         existingPerson.setId(personId);
         existingPerson.setName("Old Name");
@@ -165,7 +165,7 @@ public class PersonServiceTest {
     }
 
     @Test
-    public void testAddChild_Success() {
+    public void testAddChildSuccess() {
         Person child = new Person();
         child.setName("Baby Doe");
 
@@ -185,7 +185,7 @@ public class PersonServiceTest {
     }
 
     @Test
-    public void testAddChild_NoSpouse() {
+    public void testAddChildNoSpouse() {
         person.setSpouses(new ArrayList<>());
         when(personRepository.findById(personId)).thenReturn(Optional.of(person));
 
@@ -198,7 +198,7 @@ public class PersonServiceTest {
     }
 
     @Test
-    public void testAddChild_PersonNotFound() {
+    public void testAddChildPersonNotFound() {
         Person child = new Person();
         child.setName("Baby Doe");
 
@@ -209,7 +209,7 @@ public class PersonServiceTest {
     }
 
     @Test
-    public void testAddChild_NameAlreadyExists() {
+    public void testAddChildNameAlreadyExists() {
         Person child = new Person();
         child.setName("Baby Doe");
 
@@ -225,7 +225,7 @@ public class PersonServiceTest {
     }
 
     @Test
-    public void testAddSpouse_Success() {
+    public void testAddSpouseSuccess() {
         Person newSpouse = new Person();
         newSpouse.setName("New Spouse");
         newSpouse.setGender(Gender.F);
@@ -254,7 +254,7 @@ public class PersonServiceTest {
     }
 
     @Test
-    public void testAddSpouse_PersonNotFound() {
+    public void testAddSpousePersonNotFound() {
         Person newSpouse = new Person();
         newSpouse.setName("New Spouse");
 
@@ -265,7 +265,7 @@ public class PersonServiceTest {
     }
 
     @Test
-    public void testAddSpouse_SpouseIdAlreadyExists() {
+    public void testAddSpouseSpouseIdAlreadyExists() {
         String existingSpouseId = UUID.randomUUID().toString();
         Person newSpouse = new Person();
         newSpouse.setId(existingSpouseId);
@@ -284,7 +284,7 @@ public class PersonServiceTest {
     }
 
     @Test
-    public void testAddSpouse_SameGender() {
+    public void testAddSpouseSameGender() {
         Person newSpouse = new Person();
         newSpouse.setName("New Spouse");
         newSpouse.setGender(Gender.M);
@@ -303,7 +303,7 @@ public class PersonServiceTest {
     }
 
     @Test
-    public void testDeletePerson_Success_WithRelationships() {
+    public void testDeletePersonSuccessWithRelationships() {
         String childId = UUID.randomUUID().toString();
         String fatherId = UUID.randomUUID().toString();
 
@@ -335,7 +335,7 @@ public class PersonServiceTest {
     }
 
     @Test
-    public void testDeletePerson_NotFound() {
+    public void testDeletePersonNotFound() {
         when(personRepository.findById(personId)).thenReturn(Optional.empty());
 
         boolean result = personService.deletePerson(personId);
@@ -344,7 +344,7 @@ public class PersonServiceTest {
     }
 
     @Test
-    public void testDeletePerson_NoRelationships() {
+    public void testDeletePersonNoRelationships() {
         person.setSpouses(new ArrayList<>());
         person.setChildren(new ArrayList<>());
         person.setFatherId(null);

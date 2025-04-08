@@ -56,7 +56,7 @@ public class MemoryBoxServiceTest {
     }
 
     @Test
-    public void testGetAllMemoryBoxes_Success() {
+    public void testGetAllMemoryBoxesSuccess() {
         when(memoryBoxRepository.findAll()).thenReturn(Arrays.asList(memoryBox));
 
         var result = memoryBoxService.getAllMemoryBoxes();
@@ -66,7 +66,7 @@ public class MemoryBoxServiceTest {
     }
 
     @Test
-    public void testGetMemoryBoxById_Success() {
+    public void testGetMemoryBoxByIdSuccess() {
         when(memoryBoxRepository.findById(memoryBoxId)).thenReturn(Optional.of(memoryBox));
 
         MemoryBox result = memoryBoxService.getMemoryBoxById(memoryBoxId);
@@ -75,14 +75,14 @@ public class MemoryBoxServiceTest {
     }
 
     @Test
-    public void testGetMemoryBoxById_NotFound() {
+    public void testGetMemoryBoxByIdNotFound() {
         when(memoryBoxRepository.findById(memoryBoxId)).thenReturn(Optional.empty());
 
         assertThrows(MemoryBoxNotFoundException.class, () -> memoryBoxService.getMemoryBoxById(memoryBoxId));
     }
 
     @Test
-    public void testGetMemoryBoxByPersonId_Success() {
+    public void testGetMemoryBoxByPersonIdSuccess() {
         when(personRepository.findById(personId)).thenReturn(Optional.of(person));
 
         MemoryBox result = memoryBoxService.getMemoryBoxByPersonId(personId);
@@ -91,28 +91,28 @@ public class MemoryBoxServiceTest {
     }
 
     @Test
-    public void testGetMemoryBoxByPersonId_PersonNotFound() {
+    public void testGetMemoryBoxByPersonIdPersonNotFound() {
         when(personRepository.findById(personId)).thenReturn(Optional.empty());
 
         assertThrows(PersonNotFoundException.class, () -> memoryBoxService.getMemoryBoxByPersonId(personId));
     }
 
     @Test
-    public void testCreateMemoryBox_PersonNotFound() {
+    public void testCreateMemoryBoxPersonNotFound() {
         when(personRepository.findById(personId)).thenReturn(Optional.empty());
 
         assertThrows(PersonNotFoundException.class, () -> memoryBoxService.createMemoryBox(personId, memoryBox));
     }
 
     @Test
-    public void testCreateMemoryBox_AlreadyHasMemoryBox() {
+    public void testCreateMemoryBoxAlreadyHasMemoryBox() {
         when(personRepository.findById(personId)).thenReturn(Optional.of(person));
 
         assertThrows(InvalidMemoryBoxException.class, () -> memoryBoxService.createMemoryBox(personId, memoryBox));
     }
 
     @Test
-    public void testCreateMemoryBox_InvalidAvatarUrl() {
+    public void testCreateMemoryBoxInvalidAvatarUrl() {
         Person newPerson = new Person();
         newPerson.setId(UUID.randomUUID().toString());
         newPerson.setName("Jane Doe");
@@ -127,7 +127,7 @@ public class MemoryBoxServiceTest {
     }
 
     @Test
-    public void testUpdateAvatar_Success() {
+    public void testUpdateAvatarSuccess() {
         when(memoryBoxRepository.findById(memoryBoxId)).thenReturn(Optional.of(memoryBox));
         when(memoryBoxRepository.saveAndFlush(any(MemoryBox.class))).thenReturn(memoryBox);
 
@@ -136,14 +136,14 @@ public class MemoryBoxServiceTest {
     }
 
     @Test
-    public void testUpdateAvatar_NotFound() {
+    public void testUpdateAvatarNotFound() {
         when(memoryBoxRepository.findById(memoryBoxId)).thenReturn(Optional.empty());
 
         assertThrows(MemoryBoxNotFoundException.class, () -> memoryBoxService.updateAvatar(memoryBoxId, "https://example.com/new-avatar.png"));
     }
 
     @Test
-    public void testDeleteMemoryBox_Success() {
+    public void testDeleteMemoryBoxSuccess() {
         when(memoryBoxRepository.findById(memoryBoxId)).thenReturn(Optional.of(memoryBox));
         when(personRepository.save(any(Person.class))).thenReturn(person);
 
@@ -153,7 +153,7 @@ public class MemoryBoxServiceTest {
     }
 
     @Test
-    public void testDeleteMemoryBox_NotFound() {
+    public void testDeleteMemoryBoxNotFound() {
         when(memoryBoxRepository.findById(memoryBoxId)).thenReturn(Optional.empty());
 
         assertThrows(MemoryBoxNotFoundException.class, () -> memoryBoxService.deleteMemoryBox(memoryBoxId));
