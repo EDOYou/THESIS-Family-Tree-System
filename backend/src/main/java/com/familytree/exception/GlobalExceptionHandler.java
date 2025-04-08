@@ -37,6 +37,21 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(404).build();
     }
 
+    @ExceptionHandler(MemoryBoxNotFoundException.class)
+    public ResponseEntity<Void> handleMemoryBoxNotFoundException(MemoryBoxNotFoundException e) {
+        return ResponseEntity.status(404).build();
+    }
+
+    @ExceptionHandler(PersonNotFoundException.class)
+    public ResponseEntity<Void> handlePersonNotFoundException(PersonNotFoundException e) {
+        return ResponseEntity.status(404).build();
+    }
+
+    @ExceptionHandler(InvalidMemoryBoxException.class)
+    public ResponseEntity<Void> handleInvalidMemoryBoxException(InvalidMemoryBoxException e) {
+        return ResponseEntity.status(400).build();
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<String> handleRuntimeException(RuntimeException e) {
         return ResponseEntity.status(400).body(e.getMessage());
