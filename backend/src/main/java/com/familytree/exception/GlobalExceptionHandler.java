@@ -76,4 +76,19 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Void> handleUnauthorizedNotableRecordAccessException(UnauthorizedNotableRecordAccessException e) {
         return ResponseEntity.status(403).build();
     }
+
+    @ExceptionHandler(QuizNotFoundException.class)
+    public ResponseEntity<Void> handleQuizNotFoundException(QuizNotFoundException e) {
+        return ResponseEntity.status(404).build();
+    }
+
+    @ExceptionHandler(InvalidQuizException.class)
+    public ResponseEntity<Void> handleInvalidQuizException(InvalidQuizException e) {
+        return ResponseEntity.status(400).build();
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<Void> handleUnauthorizedException(UnauthorizedException e) {
+        return ResponseEntity.status(403).build();
+    }
 }
