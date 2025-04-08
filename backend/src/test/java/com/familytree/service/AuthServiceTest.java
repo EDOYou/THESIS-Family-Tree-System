@@ -52,7 +52,7 @@ public class AuthServiceTest {
     }
 
     @Test
-    public void testRegister_Success() {
+    public void testRegisterSuccess() {
         when(userRepository.findByUsername("testuser")).thenReturn(Optional.empty());
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.empty());
         when(passwordEncoder.encode("password")).thenReturn("encodedPassword");
@@ -64,14 +64,14 @@ public class AuthServiceTest {
     }
 
     @Test
-    public void testRegister_UsernameExists() {
+    public void testRegisterUsernameExists() {
         when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
 
         assertThrows(RuntimeException.class, () -> authService.register(registerRequest));
     }
 
     @Test
-    public void testRegister_EmailExists() {
+    public void testRegisterEmailExists() {
         when(userRepository.findByUsername("testuser")).thenReturn(Optional.empty());
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
 
@@ -79,7 +79,7 @@ public class AuthServiceTest {
     }
 
     @Test
-    public void testGetCurrentUser_Success() {
+    public void testGetCurrentUserSuccess() {
         Authentication authentication = mock(Authentication.class);
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getName()).thenReturn("testuser");
@@ -91,7 +91,7 @@ public class AuthServiceTest {
     }
 
     @Test
-    public void testGetCurrentUser_NotAuthenticated() {
+    public void testGetCurrentUserNotAuthenticated() {
         Authentication authentication = mock(Authentication.class);
         when(authentication.isAuthenticated()).thenReturn(false);
 
@@ -99,12 +99,12 @@ public class AuthServiceTest {
     }
 
     @Test
-    public void testGetCurrentUser_NullAuthentication() {
+    public void testGetCurrentUserNullAuthentication() {
         assertThrows(UnauthenticatedException.class, () -> authService.getCurrentUser(null));
     }
 
     @Test
-    public void testGetCurrentUser_UserNotFound() {
+    public void testGetCurrentUserUserNotFound() {
         Authentication authentication = mock(Authentication.class);
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getName()).thenReturn("testuser");

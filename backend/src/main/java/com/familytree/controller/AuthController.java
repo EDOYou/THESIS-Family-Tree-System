@@ -1,7 +1,5 @@
 package com.familytree.controller;
 
-import com.familytree.exception.UnauthenticatedException;
-import com.familytree.exception.UserNotFoundException;
 import com.familytree.model.User;
 import com.familytree.model.dto.AuthResponse;
 import com.familytree.model.dto.RegisterRequest;
@@ -28,13 +26,7 @@ public class AuthController {
 
     @GetMapping("/me")
     public ResponseEntity<User> getCurrentUser(Authentication authentication) {
-        try {
-            User user = authService.getCurrentUser(authentication);
-            return ResponseEntity.ok(user);
-        } catch (UnauthenticatedException e) {
-            return ResponseEntity.status(401).build();
-        } catch (UserNotFoundException e) {
-            return ResponseEntity.status(404).build();
-        }
+        User user = authService.getCurrentUser(authentication);
+        return ResponseEntity.ok(user);
     }
 }
