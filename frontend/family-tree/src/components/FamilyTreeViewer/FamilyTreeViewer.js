@@ -142,7 +142,6 @@ const FamilyTreeViewer = ({ tree, onTreeUpdate, isAdmin }) => {
             deathDate: node.data.deathDate || null,
             birthPlace: node.data.birthPlace || null,
             deathPlace: node.data.deathPlace || null,
-            hasSubTree: node.data.hasSubTree || false,
             avatar: node.data.avatar || null,
             fatherId: node.rels.father || null,
             motherId: node.rels.mother || null,

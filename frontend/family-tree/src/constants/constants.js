@@ -7,7 +7,6 @@ export const DEFAULT_ME_NODE = {
   deathDate: null,
   birthPlace: null,
   deathPlace: null,
-  hasSubTree: false,
   children: [],
   spouseId: null,
   fatherId: null,
@@ -39,6 +38,7 @@ export const VIEW_FIELDS = [
   { type: "text", label: "Death Date", id: "deathDate" },
   { type: "text", label: "Birth Place", id: "birthPlace" },
   { type: "text", label: "Death Place", id: "deathPlace" },
+  { type: "text", label: "Avatar URL", id: "avatar" },
 ];
 
 export const EDIT_FIELDS = [
@@ -50,7 +50,6 @@ export const EDIT_FIELDS = [
   { type: "text", label: "Death Date", id: "deathDate" },
   { type: "text", label: "Birth Place", id: "birthPlace" },
   { type: "text", label: "Death Place", id: "deathPlace" },
-  { type: "text", label: "Has Sub Tree", id: "hasSubTree" },
   { type: "text", label: "Avatar URL", id: "avatar" },
 ];
 

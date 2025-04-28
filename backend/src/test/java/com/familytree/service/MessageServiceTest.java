@@ -1,4 +1,3 @@
-// MessageServiceTest.java
 package com.familytree.service;
 
 import com.familytree.exception.InvalidMessageException;

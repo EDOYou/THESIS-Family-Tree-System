@@ -65,7 +65,7 @@ public class QuizServiceTest {
     }
 
     @Test
-    public void testCreateQuiz_Success() {
+    public void testCreateQuizSuccess() {
         Authentication authentication = mock(Authentication.class);
         SecurityContext securityContext = mock(SecurityContext.class);
         when(securityContext.getAuthentication()).thenReturn(authentication);
@@ -83,43 +83,43 @@ public class QuizServiceTest {
     }
 
     @Test
-    public void testCreateQuiz_EmptyQuestion() {
+    public void testCreateQuizEmptyQuestion() {
         quiz.setQuestion("");
         assertThrows(InvalidQuizException.class, () -> quizService.createQuiz(quiz));
     }
 
     @Test
-    public void testCreateQuiz_EmptyOption1() {
+    public void testCreateQuizEmptyOption1() {
         quiz.setOption1("");
         assertThrows(InvalidQuizException.class, () -> quizService.createQuiz(quiz));
     }
 
     @Test
-    public void testCreateQuiz_EmptyOption2() {
+    public void testCreateQuizEmptyOption2() {
         quiz.setOption2("");
         assertThrows(InvalidQuizException.class, () -> quizService.createQuiz(quiz));
     }
 
     @Test
-    public void testCreateQuiz_EmptyOption3() {
+    public void testCreateQuizEmptyOption3() {
         quiz.setOption3("");
         assertThrows(InvalidQuizException.class, () -> quizService.createQuiz(quiz));
     }
 
     @Test
-    public void testCreateQuiz_EmptyOption4() {
+    public void testCreateQuizEmptyOption4() {
         quiz.setOption4("");
         assertThrows(InvalidQuizException.class, () -> quizService.createQuiz(quiz));
     }
 
     @Test
-    public void testCreateQuiz_InvalidCorrectOption() {
+    public void testCreateQuizInvalidCorrectOption() {
         quiz.setCorrectOption(5);
         assertThrows(InvalidQuizException.class, () -> quizService.createQuiz(quiz));
     }
 
     @Test
-    public void testCreateQuiz_NotAuthenticated() {
+    public void testCreateQuizNotAuthenticated() {
         Authentication authentication = mock(Authentication.class);
         SecurityContext securityContext = mock(SecurityContext.class);
         when(securityContext.getAuthentication()).thenReturn(authentication);
@@ -130,7 +130,7 @@ public class QuizServiceTest {
     }
 
     @Test
-    public void testCreateQuiz_UserNotFound() {
+    public void testCreateQuizUserNotFound() {
         Authentication authentication = mock(Authentication.class);
         SecurityContext securityContext = mock(SecurityContext.class);
         when(securityContext.getAuthentication()).thenReturn(authentication);
@@ -144,7 +144,7 @@ public class QuizServiceTest {
     }
 
     @Test
-    public void testGetAllQuizzes_Success() {
+    public void testGetAllQuizzesSuccess() {
         when(quizRepository.findAll()).thenReturn(Arrays.asList(quiz));
 
         var result = quizService.getAllQuizzes();
@@ -153,7 +153,7 @@ public class QuizServiceTest {
     }
 
     @Test
-    public void testGetAllQuizzes_EmptyList() {
+    public void testGetAllQuizzesEmptyList() {
         when(quizRepository.findAll()).thenReturn(Collections.emptyList());
 
         var result = quizService.getAllQuizzes();
@@ -161,7 +161,7 @@ public class QuizServiceTest {
     }
 
     @Test
-    public void testGetRandomQuiz_Success() {
+    public void testGetRandomQuizSuccess() {
         when(quizRepository.findAll()).thenReturn(Arrays.asList(quiz));
 
         Quiz result = quizService.getRandomQuiz();
@@ -169,14 +169,14 @@ public class QuizServiceTest {
     }
 
     @Test
-    public void testGetRandomQuiz_NoQuizzes() {
+    public void testGetRandomQuizNoQuizzes() {
         when(quizRepository.findAll()).thenReturn(Collections.emptyList());
 
         assertThrows(QuizNotFoundException.class, () -> quizService.getRandomQuiz());
     }
 
     @Test
-    public void testUpdateQuiz_Success() {
+    public void testUpdateQuizSuccess() {
         Authentication authentication = mock(Authentication.class);
         SecurityContext securityContext = mock(SecurityContext.class);
         when(securityContext.getAuthentication()).thenReturn(authentication);
@@ -203,7 +203,7 @@ public class QuizServiceTest {
     }
 
     @Test
-    public void testUpdateQuiz_Unauthorized() {
+    public void testUpdateQuizUnauthorized() {
         Authentication authentication = mock(Authentication.class);
         SecurityContext securityContext = mock(SecurityContext.class);
         when(securityContext.getAuthentication()).thenReturn(authentication);
@@ -222,7 +222,7 @@ public class QuizServiceTest {
     }
 
     @Test
-    public void testDeleteQuiz_Success() {
+    public void testDeleteQuizSuccess() {
         Authentication authentication = mock(Authentication.class);
         SecurityContext securityContext = mock(SecurityContext.class);
         when(securityContext.getAuthentication()).thenReturn(authentication);
@@ -239,7 +239,7 @@ public class QuizServiceTest {
 
 
     @Test
-    public void testDeleteQuiz_Unauthorized() {
+    public void testDeleteQuizUnauthorized() {
         Authentication authentication = mock(Authentication.class);
         SecurityContext securityContext = mock(SecurityContext.class);
         when(securityContext.getAuthentication()).thenReturn(authentication);

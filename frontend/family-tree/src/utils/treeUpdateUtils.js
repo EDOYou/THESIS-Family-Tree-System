@@ -22,7 +22,6 @@ export const transformNodeData = (node) => {
     deathDate: node.data.deathDate || null,
     birthPlace: node.data.birthPlace || null,
     deathPlace: node.data.deathPlace || null,
-    hasSubTree: node.data.hasSubTree || false,
     avatar: node.data.avatar || null,
     fatherId: node.rels.father || null,
     motherId: node.rels.mother || null,
@@ -49,7 +48,6 @@ export const createNodeData = (node) => ({
   deathDate: node.deathDate,
   birthPlace: node.birthPlace,
   deathPlace: node.deathPlace,
-  hasSubTree: node.hasSubTree,
   fatherId: node.fatherId,
   motherId: node.motherId,
   spouses: node.spouses,
@@ -167,7 +165,6 @@ export const handleTreeUpdate = async ({
               deathDate: newNode.deathDate,
               birthPlace: newNode.birthPlace,
               deathPlace: newNode.deathPlace,
-              hasSubTree: newNode.hasSubTree,
               avatar: newNode.avatar,
               fatherId: newNode.fatherId,
               motherId: newNode.motherId,
@@ -285,7 +282,6 @@ export const handleTreeUpdate = async ({
         deathDate: originalNode.deathDate ?? null,
         birthPlace: originalNode.birthPlace ?? null,
         deathPlace: originalNode.deathPlace ?? null,
-        hasSubTree: originalNode.hasSubTree ?? false,
         fatherId: originalNode.fatherId ?? null,
         motherId: originalNode.motherId ?? null,
         spouses: originalNode.spouses ?? [],
@@ -301,7 +297,6 @@ export const handleTreeUpdate = async ({
         deathDate: node.deathDate ?? null,
         birthPlace: node.birthPlace ?? null,
         deathPlace: node.deathPlace ?? null,
-        hasSubTree: node.hasSubTree ?? false,
         fatherId: node.fatherId ?? null,
         motherId: node.motherId ?? null,
         spouses: node.spouses ?? [],
@@ -391,7 +386,6 @@ export const handleTreeUpdate = async ({
           updatedNode.deathDate !== originalNode.deathDate ||
           updatedNode.birthPlace !== originalNode.birthPlace ||
           updatedNode.deathPlace !== originalNode.deathPlace ||
-          updatedNode.hasSubTree !== originalNode.hasSubTree ||
           updatedNode.fatherId !== originalNode.fatherId ||
           updatedNode.motherId !== originalNode.motherId);
 
@@ -442,7 +436,6 @@ export const handleTreeUpdate = async ({
           "death date": node.deathDate,
           "birth place": node.birthPlace,
           "death place": node.deathPlace,
-          "has sub tree": node.hasSubTree,
           avatar: node.avatar,
         },
         rels: {

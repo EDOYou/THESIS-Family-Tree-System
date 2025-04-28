@@ -133,7 +133,6 @@ export const buildTree = (persons, debug = false) => {
     deathDate: person.deathDate,
     birthPlace: person.birthPlace,
     deathPlace: person.deathPlace,
-    hasSubTree: person.hasSubTree,
     avatar: person.avatar,
   }));
 
@@ -206,7 +205,6 @@ export const transformTree = (tree) => {
           deathDate: mapEmptyToNull(node.deathDate),
           birthPlace: mapEmptyToNull(node.birthPlace),
           deathPlace: mapEmptyToNull(node.deathPlace),
-          hasSubTree: node.hasSubTree || false,
           avatar: mapEmptyToNull(node.avatar),
         },
         rels,

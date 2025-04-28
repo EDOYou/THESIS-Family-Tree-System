@@ -9,5 +9,4 @@ import java.util.Optional;
 @Repository
 public interface PersonRepository extends JpaRepository<Person, String> {
     Optional<Person> findByName(String name);
-    Optional<Person> findFirstByFatherIdIsNullAndMotherIdIsNull();
 }
