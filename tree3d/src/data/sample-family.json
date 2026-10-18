@@ -1,0 +1,438 @@
+{
+  "version": 1,
+  "generatedAt": "2026-10-18T00:00:00Z",
+  "people": [
+    {
+      "id": "walter",
+      "displayName": "Walter Brooks",
+      "givenName": "Walter",
+      "familyName": "Brooks",
+      "gender": "M",
+      "birth": {
+        "date": "1890",
+        "place": "Bristol"
+      },
+      "death": {
+        "date": "1960"
+      },
+      "occupation": "Clockmaker",
+      "biography": "Walter repaired clocks in a narrow shop by the harbour for forty years.\n\nHe taught every grandchild to wind a pocket watch, and his workbench still sits in the family's attic."
+    },
+    {
+      "id": "edith",
+      "displayName": "Edith Brooks",
+      "givenName": "Edith",
+      "familyName": "Brooks",
+      "gender": "F",
+      "birth": {
+        "date": "1895",
+        "place": "Bath"
+      },
+      "death": {
+        "date": "1971"
+      },
+      "occupation": "Seamstress",
+      "biography": "Edith sewed wedding dresses for half the town, including her own daughter's."
+    },
+    {
+      "id": "arthur",
+      "displayName": "Arthur Hale",
+      "givenName": "Arthur",
+      "familyName": "Hale",
+      "gender": "M",
+      "birth": {
+        "date": "1921-03-14",
+        "place": "Leeds"
+      },
+      "death": {
+        "date": "1998-11-02"
+      },
+      "occupation": "Railway engineer",
+      "biography": "Arthur spent his working life keeping the northern lines running. He met Margaret on a delayed train in 1944 and liked to say it was the best delay of his career.\n\nIn retirement he built a model railway that filled the whole garage."
+    },
+    {
+      "id": "margaret",
+      "displayName": "Margaret Hale",
+      "givenName": "Margaret",
+      "familyName": "Hale",
+      "gender": "F",
+      "birth": {
+        "date": "1924-07-09",
+        "place": "Bristol"
+      },
+      "death": {
+        "date": "2010-01-21"
+      },
+      "occupation": "Schoolteacher",
+      "biography": "Margaret taught primary school for 35 years and never forgot a pupil's name.\n\nShe kept the family recipe book, which is where most of the family stories in this tree came from."
+    },
+    {
+      "id": "thomas",
+      "displayName": "Thomas Hale",
+      "givenName": "Thomas",
+      "familyName": "Hale",
+      "gender": "M",
+      "birth": {
+        "date": "1946-05-02"
+      },
+      "death": {
+        "date": "2019-08-30"
+      },
+      "occupation": "Carpenter",
+      "biography": "Thomas built the oak dining table every family gathering has happened around since 1975."
+    },
+    {
+      "id": "eleanor",
+      "displayName": "Eleanor Hale",
+      "givenName": "Eleanor",
+      "familyName": "Hale",
+      "gender": "F",
+      "birth": {
+        "date": "1948-10-11"
+      },
+      "occupation": "Nurse",
+      "biography": "Eleanor worked night shifts on the children's ward and is the family's unofficial doctor to this day."
+    },
+    {
+      "id": "ruth",
+      "displayName": "Ruth Marsh",
+      "givenName": "Ruth",
+      "familyName": "Marsh",
+      "gender": "F",
+      "birth": {
+        "date": "1950-02-17"
+      },
+      "occupation": "Librarian",
+      "biography": "Ruth runs the local history society and started digitising the family photo albums."
+    },
+    {
+      "id": "david",
+      "displayName": "David Marsh",
+      "givenName": "David",
+      "familyName": "Marsh",
+      "gender": "M",
+      "birth": {
+        "date": "1947-12-01"
+      },
+      "death": {
+        "date": "2015-04-12"
+      },
+      "occupation": "Fisherman",
+      "biography": "David fished the North Sea for thirty years and told the best stories at every wedding."
+    },
+    {
+      "id": "peter",
+      "displayName": "Peter Hale",
+      "givenName": "Peter",
+      "familyName": "Hale",
+      "gender": "M",
+      "birth": {
+        "date": "1955-09-23"
+      },
+      "occupation": "Architect"
+    },
+    {
+      "id": "anna",
+      "displayName": "Anna Hale",
+      "givenName": "Anna",
+      "familyName": "Hale",
+      "gender": "F",
+      "birth": {
+        "date": "1957-06-30",
+        "place": "Kraków"
+      },
+      "occupation": "Translator",
+      "biography": "Anna moved to England in 1979 and brought pierogi to every family Christmas since."
+    },
+    {
+      "id": "james",
+      "displayName": "James Hale",
+      "givenName": "James",
+      "familyName": "Hale",
+      "gender": "M",
+      "birth": {
+        "date": "1972-04-04"
+      },
+      "occupation": "Software developer"
+    },
+    {
+      "id": "sofia",
+      "displayName": "Sofia Hale",
+      "givenName": "Sofia",
+      "familyName": "Hale",
+      "gender": "F",
+      "birth": {
+        "date": "1975-01-19",
+        "place": "Lisbon"
+      },
+      "occupation": "Doctor"
+    },
+    {
+      "id": "clara",
+      "displayName": "Clara Hale",
+      "givenName": "Clara",
+      "familyName": "Hale",
+      "gender": "F",
+      "birth": {
+        "date": "1976-08-08"
+      },
+      "occupation": "Photographer",
+      "biography": "Most of the photos in this tree were taken by Clara."
+    },
+    {
+      "id": "daniel",
+      "displayName": "Daniel Marsh",
+      "givenName": "Daniel",
+      "familyName": "Marsh",
+      "gender": "M",
+      "birth": {
+        "date": "1974-03-15"
+      },
+      "occupation": "Teacher"
+    },
+    {
+      "id": "lena",
+      "displayName": "Lena Marsh",
+      "givenName": "Lena",
+      "familyName": "Marsh",
+      "gender": "F",
+      "birth": {
+        "date": "1976-11-27"
+      },
+      "occupation": "Pharmacist"
+    },
+    {
+      "id": "emily",
+      "displayName": "Emily Marsh",
+      "givenName": "Emily",
+      "familyName": "Marsh",
+      "gender": "F",
+      "birth": {
+        "date": "1979-05-05"
+      },
+      "occupation": "Marine biologist"
+    },
+    {
+      "id": "oliver",
+      "displayName": "Oliver Hale",
+      "givenName": "Oliver",
+      "familyName": "Hale",
+      "gender": "M",
+      "birth": {
+        "date": "1985-07-12"
+      },
+      "occupation": "Chef"
+    },
+    {
+      "id": "grace",
+      "displayName": "Grace Ellis",
+      "givenName": "Grace",
+      "familyName": "Ellis",
+      "gender": "F",
+      "birth": {
+        "date": "1988-02-29"
+      },
+      "occupation": "Engineer",
+      "biography": "Born on a leap day, Grace only gets a real birthday every four years and celebrates each one like a jubilee."
+    },
+    {
+      "id": "mark",
+      "displayName": "Mark Ellis",
+      "givenName": "Mark",
+      "familyName": "Ellis",
+      "gender": "M",
+      "birth": {
+        "date": "1986-09-03"
+      },
+      "occupation": "Musician"
+    },
+    {
+      "id": "leo",
+      "displayName": "Leo Hale",
+      "givenName": "Leo",
+      "familyName": "Hale",
+      "gender": "M",
+      "birth": {
+        "date": "2003-06-01"
+      }
+    },
+    {
+      "id": "mia",
+      "displayName": "Mia Hale",
+      "givenName": "Mia",
+      "familyName": "Hale",
+      "gender": "F",
+      "birth": {
+        "date": "2006-12-24"
+      }
+    },
+    {
+      "id": "noah",
+      "displayName": "Noah Marsh",
+      "givenName": "Noah",
+      "familyName": "Marsh",
+      "gender": "M",
+      "birth": {
+        "date": "2008-10-10"
+      }
+    },
+    {
+      "id": "ivy",
+      "displayName": "Ivy Ellis",
+      "givenName": "Ivy",
+      "familyName": "Ellis",
+      "gender": "F",
+      "birth": {
+        "date": "2018-04-21"
+      }
+    }
+  ],
+  "parentLinks": [
+    {
+      "parentId": "walter",
+      "childId": "margaret"
+    },
+    {
+      "parentId": "edith",
+      "childId": "margaret"
+    },
+    {
+      "parentId": "arthur",
+      "childId": "thomas"
+    },
+    {
+      "parentId": "arthur",
+      "childId": "ruth"
+    },
+    {
+      "parentId": "arthur",
+      "childId": "peter"
+    },
+    {
+      "parentId": "margaret",
+      "childId": "thomas"
+    },
+    {
+      "parentId": "margaret",
+      "childId": "ruth"
+    },
+    {
+      "parentId": "margaret",
+      "childId": "peter"
+    },
+    {
+      "parentId": "thomas",
+      "childId": "james"
+    },
+    {
+      "parentId": "thomas",
+      "childId": "clara"
+    },
+    {
+      "parentId": "eleanor",
+      "childId": "james"
+    },
+    {
+      "parentId": "eleanor",
+      "childId": "clara"
+    },
+    {
+      "parentId": "ruth",
+      "childId": "daniel"
+    },
+    {
+      "parentId": "ruth",
+      "childId": "emily"
+    },
+    {
+      "parentId": "david",
+      "childId": "daniel"
+    },
+    {
+      "parentId": "david",
+      "childId": "emily"
+    },
+    {
+      "parentId": "peter",
+      "childId": "oliver"
+    },
+    {
+      "parentId": "peter",
+      "childId": "grace"
+    },
+    {
+      "parentId": "anna",
+      "childId": "oliver"
+    },
+    {
+      "parentId": "anna",
+      "childId": "grace"
+    },
+    {
+      "parentId": "james",
+      "childId": "leo"
+    },
+    {
+      "parentId": "james",
+      "childId": "mia"
+    },
+    {
+      "parentId": "sofia",
+      "childId": "leo"
+    },
+    {
+      "parentId": "sofia",
+      "childId": "mia"
+    },
+    {
+      "parentId": "daniel",
+      "childId": "noah"
+    },
+    {
+      "parentId": "lena",
+      "childId": "noah"
+    },
+    {
+      "parentId": "grace",
+      "childId": "ivy"
+    },
+    {
+      "parentId": "mark",
+      "childId": "ivy"
+    }
+  ],
+  "partnerships": [
+    {
+      "aId": "walter",
+      "bId": "edith"
+    },
+    {
+      "aId": "arthur",
+      "bId": "margaret"
+    },
+    {
+      "aId": "thomas",
+      "bId": "eleanor"
+    },
+    {
+      "aId": "ruth",
+      "bId": "david"
+    },
+    {
+      "aId": "peter",
+      "bId": "anna"
+    },
+    {
+      "aId": "james",
+      "bId": "sofia"
+    },
+    {
+      "aId": "daniel",
+      "bId": "lena"
+    },
+    {
+      "aId": "grace",
+      "bId": "mark"
+    }
+  ]
+}

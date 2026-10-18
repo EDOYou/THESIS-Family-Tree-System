@@ -1,0 +1,201 @@
+:root {
+  --bg: #0b1020;
+  --panel: rgba(16, 22, 44, 0.94);
+  --text: #f2f4ff;
+  --muted: #9aa5cc;
+  --accent: #ffcf70;
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  /* The app owns all gestures; stop the browser from zooming or scrolling. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.stage {
+  position: fixed;
+  inset: 0;
+}
+
+.stage canvas {
+  display: block;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.home {
+  position: fixed;
+  left: 24px;
+  bottom: 24px;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  background: var(--panel);
+  font-size: 36px;
+}
+
+.hint {
+  position: fixed;
+  left: 50%;
+  bottom: 32px;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 20px;
+  pointer-events: none;
+  transition: opacity 0.6s;
+}
+
+.hint.hidden {
+  opacity: 0;
+}
+
+.bio {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: min(480px, 92vw);
+  padding: 32px 28px 48px;
+  background: var(--panel);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.4);
+  overflow-y: auto;
+  touch-action: pan-y;
+  transform: translateX(105%);
+  transition: transform 0.35s ease;
+}
+
+.bio.open {
+  transform: translateX(0);
+}
+
+.bio-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 36px;
+  line-height: 1;
+}
+
+.bio-header {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-right: 56px;
+}
+
+.bio-portrait {
+  flex: none;
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: #c7c9d9;
+  color: var(--bg);
+  font-size: 40px;
+  font-weight: 600;
+}
+
+.bio-portrait.female {
+  background: #f2a7c3;
+}
+
+.bio-portrait.male {
+  background: #8ec5ff;
+}
+
+.bio-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bio h2 {
+  margin: 0;
+  font-size: 30px;
+}
+
+.bio-years,
+.bio-occupation {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 20px;
+}
+
+.bio-facts {
+  margin: 0 0 16px;
+  padding-left: 20px;
+  color: var(--muted);
+  font-size: 18px;
+}
+
+.bio-story p {
+  font-size: 21px;
+  line-height: 1.55;
+}
+
+.bio-empty {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.bio-relatives h3 {
+  margin: 20px 0 10px;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chip {
+  min-height: 52px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 207, 112, 0.5);
+  background: rgba(255, 207, 112, 0.1);
+  font-size: 19px;
+}
+
+.error {
+  position: fixed;
+  inset: 24px;
+  color: #ff9a9a;
+  white-space: pre-wrap;
+}
