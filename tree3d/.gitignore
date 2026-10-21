@@ -1,0 +1,5 @@
+node_modules
+dist
+
+# Real family data stays off GitHub (this repo is public).
+family-data/
