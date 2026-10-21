@@ -3,10 +3,13 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import type { TreeIndex } from "./data/types";
 import { CARD_ASPECT, CARD_WIDTH, createPersonCard } from "./labels";
 import type { TreeLayout } from "./layout";
+import { buildTree, type TreePart } from "./treeModel";
 
 const TAP_MAX_MOVE = 12; // px
 const TAP_MAX_MS = 450;
 const DOUBLE_TAP_MS = 320;
+const SKY = "#0b1020";
+const HIGHLIGHT = new THREE.Color("#ffcf70");
 
 export interface SceneCallbacks {
   onSelect: (personId: string | null) => void;
@@ -24,16 +27,52 @@ interface Tween {
 
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
+function starField(radius: number): THREE.Points {
+  const positions: number[] = [];
+  for (let i = 0; i < 900; i++) {
+    const v = new THREE.Vector3().randomDirection().multiplyScalar(radius * (0.8 + Math.random() * 0.2));
+    if (v.y < -radius * 0.1) v.y = -v.y; // keep stars above the horizon
+    positions.push(v.x, v.y, v.z);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  return new THREE.Points(
+    geometry,
+    new THREE.PointsMaterial({ color: "#c9d6ff", size: 0.35, sizeAttenuation: true, fog: false }),
+  );
+}
+
+function groundDisc(radius: number, y: number): THREE.Mesh {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 256;
+  const ctx = canvas.getContext("2d")!;
+  const gradient = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+  gradient.addColorStop(0, "rgba(46, 74, 52, 0.95)");
+  gradient.addColorStop(0.55, "rgba(30, 48, 40, 0.6)");
+  gradient.addColorStop(1, "rgba(11, 16, 32, 0)");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 256, 256);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const mesh = new THREE.Mesh(
+    new THREE.CircleGeometry(radius, 64),
+    new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false }),
+  );
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.position.y = y;
+  return mesh;
+}
+
 export class FamilyTreeScene {
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
   private camera: THREE.PerspectiveCamera;
   private controls: OrbitControls;
   private cards = new Map<string, THREE.Sprite>();
-  private links: { mesh: THREE.Mesh; ids: string[] }[] = [];
+  private parts: TreePart[] = [];
   private raycaster = new THREE.Raycaster();
   private homePos: THREE.Vector3;
-  private homeTarget = new THREE.Vector3(0, 0, 0);
+  private homeTarget: THREE.Vector3;
   private tween: Tween | null = null;
   private selected: string | null = null;
   private down: { x: number; y: number; t: number } | null = null;
@@ -50,22 +89,28 @@ export class FamilyTreeScene {
     this.renderer.setSize(container.clientWidth, container.clientHeight);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     container.appendChild(this.renderer.domElement);
+    this.scene.background = new THREE.Color(SKY);
 
-    this.scene.background = new THREE.Color("#0b1020");
+    const tree = buildTree(index, layout);
+    this.parts = tree.parts;
+    this.scene.add(tree.group);
 
-    // Back the camera off until the whole tree fits, on landscape or portrait screens.
+    // Frame the whole tree, from the roots to the top generation, on any screen shape.
+    const topY = layout.levelY(Math.max(layout.generations - 1, 0)) + 1.5;
+    const bottomY = tree.groundY;
+    const topRadius = layout.radiusAt(Math.max(layout.generations - 1, 0));
     const aspect = container.clientWidth / container.clientHeight;
     const fov = 50;
     const halfTan = Math.tan(THREE.MathUtils.degToRad(fov / 2));
-    const treeHeight = layout.levelY(0) - layout.levelY(layout.generations - 1) + 2;
-    const fitHeight = (treeHeight * 1.2) / 2 / halfTan;
-    const fitWidth = (layout.radius * 2 * 1.1) / 2 / (halfTan * aspect);
-    const distance = layout.radius + Math.max(fitHeight, fitWidth);
-    this.camera = new THREE.PerspectiveCamera(fov, aspect, 0.1, 500);
-    this.homePos = new THREE.Vector3(0, treeHeight * 0.1, distance);
-    // Fade the far side of the cylinder so the front reads clearly.
-    this.scene.fog = new THREE.Fog("#0b1020", distance, distance + layout.radius * 2.5);
+    const fitHeight = ((topY - bottomY) * 1.15) / 2 / halfTan;
+    const fitWidth = (topRadius * 2 * 1.1) / 2 / (halfTan * aspect);
+    const distance = topRadius + Math.max(fitHeight, fitWidth);
+    this.homeTarget = new THREE.Vector3(0, (topY + bottomY) / 2, 0);
+    this.homePos = new THREE.Vector3(0, this.homeTarget.y + (topY - bottomY) * 0.12, distance);
+    this.camera = new THREE.PerspectiveCamera(fov, aspect, 0.1, 1000);
     this.camera.position.copy(this.homePos);
+    // Fade the far side of the crown so the front reads clearly.
+    this.scene.fog = new THREE.Fog(SKY, distance, distance + topRadius * 2.5);
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.target.copy(this.homeTarget);
@@ -73,9 +118,9 @@ export class FamilyTreeScene {
     this.controls.dampingFactor = 0.08;
     this.controls.rotateSpeed = 0.6;
     this.controls.minDistance = 4;
-    this.controls.maxDistance = distance * 2;
+    this.controls.maxDistance = distance * 1.8;
     this.controls.minPolarAngle = Math.PI * 0.2;
-    this.controls.maxPolarAngle = Math.PI * 0.8;
+    this.controls.maxPolarAngle = Math.PI * 0.62;
     this.controls.autoRotateSpeed = 0.6;
     this.controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
     this.controls.addEventListener("start", () => {
@@ -83,85 +128,25 @@ export class FamilyTreeScene {
       this.callbacks.onInteract();
     });
 
-    this.buildScene();
-    this.bindPointer();
-    window.addEventListener("resize", () => this.resize());
-    this.renderer.setAnimationLoop((time) => this.frame(time));
-  }
-
-  private buildScene() {
-    const { layout, index } = this;
-    this.scene.add(new THREE.AmbientLight("#ffffff", 0.9));
-    const sun = new THREE.DirectionalLight("#ffffff", 1.2);
-    sun.position.set(10, 20, 15);
-    this.scene.add(sun);
-
-    // A faint trunk and one ring per generation give the tree a shape.
-    const top = layout.levelY(0) + 2;
-    const bottom = layout.levelY(layout.generations - 1) - 2;
-    const trunk = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.25, 0.6, top - bottom, 24),
-      new THREE.MeshStandardMaterial({ color: "#3a2f4f", transparent: true, opacity: 0.6 }),
-    );
-    trunk.position.y = (top + bottom) / 2;
-    this.scene.add(trunk);
-    const ringMaterial = new THREE.MeshBasicMaterial({ color: "#2a3566", transparent: true, opacity: 0.5 });
-    for (let g = 0; g < layout.generations; g++) {
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(layout.radius, 0.03, 8, 128), ringMaterial);
-      ring.rotation.x = Math.PI / 2;
-      ring.position.y = layout.levelY(g) - 0.9;
-      this.scene.add(ring);
-    }
+    this.scene.add(new THREE.HemisphereLight("#cfe0ff", "#2b2a1e", 1.1));
+    const moon = new THREE.DirectionalLight("#ffffff", 1.4);
+    moon.position.set(15, 30, 25);
+    this.scene.add(moon);
+    this.scene.add(starField(distance * 3));
+    this.scene.add(groundDisc(topRadius * 1.4, bottomY - 0.35));
 
     for (const [id, node] of layout.nodes) {
       const card = createPersonCard(index.people.get(id)!);
       card.position.set(...node.position);
       card.userData.personId = id;
+      card.renderOrder = 1;
       this.cards.set(id, card);
       this.scene.add(card);
     }
 
-    const point = (id: string) => new THREE.Vector3(...layout.nodes.get(id)!.position);
-    const parentMaterial = new THREE.MeshBasicMaterial({ color: "#7c8cff", transparent: true, opacity: 0.85 });
-    const partnerMaterial = new THREE.MeshBasicMaterial({ color: "#ffcf70", transparent: true, opacity: 0.9 });
-
-    // One curve per child, starting from the middle of the parents' couple bar
-    // (or from the single parent's card) and landing on top of the child's card.
-    for (const [childId, parentIds] of index.parents) {
-      const from = parentIds
-        .map(point)
-        .reduce((sum, p) => sum.add(p), new THREE.Vector3())
-        .divideScalar(parentIds.length);
-      if (parentIds.length === 1) from.y -= 0.45;
-      const to = point(childId).add(new THREE.Vector3(0, 0.45, 0));
-      const midY = (from.y + to.y) / 2;
-      const curve = new THREE.CubicBezierCurve3(
-        from,
-        new THREE.Vector3(from.x, midY, from.z),
-        new THREE.Vector3(to.x, midY, to.z),
-        to,
-      );
-      const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 24, 0.035, 6), parentMaterial.clone());
-      this.links.push({ mesh, ids: [...parentIds, childId] });
-      this.scene.add(mesh);
-    }
-
-    const drawn = new Set<string>();
-    for (const [id, partnerIds] of index.partners) {
-      for (const partnerId of partnerIds) {
-        const key = [id, partnerId].sort().join("|");
-        if (drawn.has(key) || !layout.nodes.has(id) || !layout.nodes.has(partnerId)) continue;
-        drawn.add(key);
-        // Bar between the two cards' inner edges, so it never crosses a name.
-        const a = point(id);
-        const b = point(partnerId);
-        const inset = b.clone().sub(a).normalize().multiplyScalar(CARD_WIDTH / 2 - 0.05);
-        const curve = new THREE.LineCurve3(a.add(inset), b.sub(inset));
-        const mesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 4, 0.06, 6), partnerMaterial.clone());
-        this.links.push({ mesh, ids: [id, partnerId] });
-        this.scene.add(mesh);
-      }
-    }
+    this.bindPointer();
+    window.addEventListener("resize", () => this.resize());
+    this.renderer.setAnimationLoop((time) => this.frame(time));
   }
 
   private bindPointer() {
@@ -194,7 +179,7 @@ export class FamilyTreeScene {
     return (hits[0]?.object.userData.personId as string | undefined) ?? null;
   }
 
-  /** Highlights a person and their immediate family; null clears it. */
+  /** Highlights a person, their close family and the branches between them; null clears it. */
   select(id: string | null) {
     this.selected = id;
     const family = new Set<string>();
@@ -205,12 +190,14 @@ export class FamilyTreeScene {
       }
     }
     for (const [personId, card] of this.cards) {
-      const material = card.material as THREE.SpriteMaterial;
-      material.opacity = !id || family.has(personId) ? 1 : 0.25;
+      (card.material as THREE.SpriteMaterial).opacity = !id || family.has(personId) ? 1 : 0.25;
     }
-    for (const { mesh, ids } of this.links) {
-      const material = mesh.material as THREE.MeshBasicMaterial;
-      material.opacity = !id || ids.includes(id) ? 0.9 : 0.12;
+    for (const part of this.parts) {
+      const material = part.mesh.material as THREE.MeshStandardMaterial;
+      const lit = id !== null && part.ids.includes(id);
+      material.color.copy(lit ? HIGHLIGHT : part.baseColor);
+      material.emissive.copy(lit ? HIGHLIGHT : new THREE.Color(0)).multiplyScalar(lit ? 0.35 : 0);
+      material.opacity = !id || lit || part.ids.length === 0 ? 1 : 0.35;
     }
   }
 
@@ -229,10 +216,6 @@ export class FamilyTreeScene {
 
   setAutoRotate(on: boolean) {
     this.controls.autoRotate = on;
-  }
-
-  get selectedId() {
-    return this.selected;
   }
 
   private animate(toPos: THREE.Vector3, toTarget: THREE.Vector3) {

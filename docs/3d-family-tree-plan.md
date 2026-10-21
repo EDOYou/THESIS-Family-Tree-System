@@ -99,11 +99,13 @@ Three pieces:
 
 **Layout (prototype does this):**
 
-- Generations become horizontal levels: ancestors at the top, descendants below, so the tree reads like a classic chart from the front.
-- Each generation is wrapped around a vertical cylinder, so rotating the tree reveals other branches instead of showing the back side of a flat chart. Couples sit side by side; children sit under their parents.
-- Parent–child links are curved lines; spouses are joined by a short bar.
+- The tree grows upward like a real tree. The root grandparents sit on top of the trunk, which has roots in the ground. Each later generation is one level higher.
+- Each generation sits on a circle around the trunk, and the circles widen with height like a crown. Rotating the tree brings other branches to the front instead of showing the back of a flat chart.
+- Partners sit side by side, joined by a wooden stick. Someone married twice sits between both partners, with the first marriage on the left. A former marriage (for example after a divorce) has a lighter, broken stick.
+- Every child grows out of a branch that starts at their parents' stick. With a single known parent, the branch starts at that parent's card. Branches thin out towards the top, and leaves grow along them.
+- Tapping a person lights up their branches in gold and fades everyone except their close family.
 
-**Later layout ideas:** a literal trunk-and-branches tree model, a spiral timeline (time as height), and "focus mode" where the tapped person moves to the center with their immediate family arranged around them.
+**Later layout ideas:** a spiral timeline (time as height), and "focus mode" where the tapped person moves to the center with their immediate family arranged around them.
 
 **Touch gestures:**
 
@@ -127,15 +129,20 @@ Normalized, so relationships cannot drift:
 Person {
   id, givenName, familyName, displayName,
   gender?, birth: { date?, place? }, death?: { date?, place? },
-  occupation?, biography? (markdown), photoUrl?, gallery?: MediaRef[],
+  occupation?, residence?: { city?, country?, lat?, lng? },   // globe pin
+  biography? (markdown), achievements?: string[],
+  photoUrl?, gallery?: MediaRef[],
   visibility: 'family' | 'editors'      // see privacy
 }
 ParentLink  { parentId, childId, kind: 'biological' | 'adoptive' | 'step' }
-Partnership { aId, bId, kind: 'married' | 'partner', start?, end? }
+Partnership { aId, bId, kind: 'married' | 'partner',
+              status: 'current' | 'former', start?, end? }   // a person can have several
 Story       { id, personId, title, date?, body }   // from NotableRecord
 ```
 
 Dates are ISO strings with optional precision (`1950`, `1950-06`, `1950-06-14`), because old records are often only a year. Age is derived, never stored.
+
+Children are linked to both of their parents, so a child automatically belongs to the right marriage. Adding a new baby means adding one person and two parent links. Nothing else about the tree has to change, and the layout makes room by itself.
 
 The viewer consumes a single **tree snapshot** JSON (`{ version, generatedAt, people, parentLinks, partnerships }`), which is easy to cache and diff.
 
@@ -165,9 +172,15 @@ The viewer consumes a single **tree snapshot** JSON (`{ version, generatedAt, pe
 
 ## 9. Sync across homes
 
+**In short:** there is one copy of the family tree, kept online. Every wall screen shows that copy. Only Bear can change it, and everyone else can only look. When Bear adds a person, each screen notices within a few minutes and shows the new tree the next time nobody is touching it.
+
+**Today (prototype):** the tree is one JSON file. Every screen opens the app with `?data=<link to that file>`, checks the file every 5 minutes, and reloads only when it is idle. Hosting that file somewhere private is enough to keep a few screens in sync while the editor is being built.
+
+**Later (server):**
+
 - The server publishes a versioned tree snapshot. Each wall screen polls `GET /api/tree/snapshot?since=<version>` every few minutes (cheap: a `304 Not Modified` most of the time). Push via WebSocket/SSE is an optional upgrade later.
 - The viewer stores the last good snapshot and photos in IndexedDB/Cache Storage through a service worker, so it starts and works with no internet.
-- Edits only happen through the editor (online). Wall screens are read-only in v1, which avoids conflict resolution entirely.
+- Edits only happen through the editor, which only Bear can sign in to. Wall screens and phones are view-only, which avoids conflict resolution entirely.
 - App updates: the static build is versioned; the service worker picks up a new version and reloads during attract mode, never while someone is using it.
 
 ## 10. Privacy and security
@@ -183,17 +196,22 @@ The viewer consumes a single **tree snapshot** JSON (`{ version, generatedAt, pe
 
 | Phase | Goal | Deliverables |
 |---|---|---|
-| **0. Prototype** (this PR) | Prove the 3D/touch experience | `tree3d/` app: cylinder layout, rotate/pinch/pan, tap for bio, double-tap fly-to, idle attract mode, sample family, legacy-data adapter, unit tests |
-| **1. Real data, one screen** | See our family on a real touchscreen | Load from old backend via adapter (or exported JSON), photos on nodes, search box, one pilot screen at home, tune gestures with real users (grandparents!) |
+| **0. Prototype** (this PR) | Prove the 3D/touch experience | `tree3d/` app: tree growing from root grandparents, multiple marriages, rotate/pinch/pan, tap for biography with achievements and a globe pin, double-tap fly-to, idle attract mode, auto-refresh of shared data, English + draft Azerbaijani, sample family, legacy-data adapter, unit tests |
+| **1. Real data, one screen** | See our family on a real touchscreen | Simple editor for Bear (add a person, link parents and partners, pick their city on a map, write a biography), our real family data, photos on cards, search box, one pilot screen at home, tune gestures with real users (grandparents!) |
 | **2. Server & sync** | Many homes, offline | Snapshot endpoint, device tokens, PWA offline cache, migration script, kiosk provisioning script |
 | **3. Biographies & media** | Rich stories | Markdown biographies, photo galleries, stories timeline, editor mode on phone |
-| **4. Delight** | Make it feel alive | Focus mode, "on this day" birthdays/memorials on the idle screen, trunk-and-branch visual theme, voice-over or recorded stories |
+| **4. Delight** | Make it feel alive | Focus mode, "on this day" birthdays/memorials on the idle screen, a "where is everyone" world view with all relatives on the globe, seasons for the tree, voice-over or recorded stories |
 | **5. Scale & polish** | Hundreds of people, many homes | Instancing/LOD, fleet health page, automated updates, accessibility review |
 
-## 12. Open questions for the family
+## 12. Decisions so far
 
-1. How many people are in the tree today, and how many homes would get a screen?
-2. Which languages should the interface support?
-3. Who are the editors?
-4. Budget per screen, and preference between a DIY Pi setup and an off-the-shelf tablet?
-5. Should living children appear on the wall screens, and with how much detail?
+- **Editor:** only Bear edits; everyone else is view-only.
+- **Languages:** English now, Azerbaijani next. All interface text is in `tree3d/src/i18n.ts`. A draft Azerbaijani translation is there to be checked, and `?lang=az` switches to it.
+- **Size:** unknown and growing, so the tree must take new people (a new baby, a new marriage) without any manual layout work.
+- **Locations:** each person has a city and country, shown as a pin on a globe. Many relatives live abroad.
+
+## 13. Open questions for the family
+
+1. Roughly how many relatives' houses would get a screen? (This decides how much to spend per screen, and whether screens are set up by hand or with a script.)
+2. Budget per screen, and preference between a DIY Pi setup and an off-the-shelf tablet?
+3. Should living children appear on the wall screens, and with how much detail?
