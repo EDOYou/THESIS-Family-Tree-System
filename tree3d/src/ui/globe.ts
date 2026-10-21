@@ -82,6 +82,32 @@ function paintMap(canvas: HTMLCanvasElement, highlight?: string) {
 }
 
 /** Unit vector for a latitude/longitude, matching three.js sphere UVs. */
+function insideRing(lng: number, lat: number, ring: Position[]): boolean {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    if (yi > lat !== yj > lat && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+/** Name of the country at a point, as used for highlighting. */
+export function countryAt(lat: number, lng: number): string | undefined {
+  for (const country of countries.features) {
+    const geometry = country.geometry;
+    if (!geometry) continue;
+    const polygons =
+      geometry.type === "Polygon" ? [geometry.coordinates] : geometry.type === "MultiPolygon" ? geometry.coordinates : [];
+    for (const [outer, ...holes] of polygons) {
+      if (insideRing(lng, lat, outer) && !holes.some((hole) => insideRing(lng, lat, hole))) {
+        return country.properties?.name;
+      }
+    }
+  }
+  return undefined;
+}
+
 export function latLngToVector(lat: number, lng: number, radius = 1): THREE.Vector3 {
   const phi = ((lng + 180) / 360) * Math.PI * 2;
   const theta = ((90 - lat) / 180) * Math.PI;
@@ -109,6 +135,8 @@ export class Globe {
   private pulse: THREE.Mesh;
   private turn: { from: THREE.Quaternion; to: THREE.Quaternion; start: number } | null = null;
   private running = false;
+  private sphere: THREE.Mesh;
+  private picker: ((place: { lat: number; lng: number; country?: string }) => void) | null = null;
 
   constructor() {
     this.element = document.createElement("canvas");
@@ -124,9 +152,11 @@ export class Globe {
     this.mapTexture.colorSpace = THREE.SRGBColorSpace;
     this.mapTexture.anisotropy = 4;
 
-    this.earth.add(
-      new THREE.Mesh(new THREE.SphereGeometry(1, 64, 48), new THREE.MeshStandardMaterial({ map: this.mapTexture, roughness: 1 })),
+    this.sphere = new THREE.Mesh(
+      new THREE.SphereGeometry(1, 64, 48),
+      new THREE.MeshStandardMaterial({ map: this.mapTexture, roughness: 1 }),
     );
+    this.earth.add(this.sphere);
     const glow = new THREE.Mesh(
       new THREE.SphereGeometry(1.08, 48, 32),
       new THREE.MeshBasicMaterial({ color: "#5aa0ff", transparent: true, opacity: 0.12, side: THREE.BackSide }),
@@ -158,6 +188,28 @@ export class Globe {
     this.controls.enablePan = false;
     this.controls.enableDamping = true;
     this.controls.rotateSpeed = 0.5;
+
+    // A tap (not a drag) on the globe picks a place when picking is on.
+    let down: { x: number; y: number } | null = null;
+    this.element.addEventListener("pointerdown", (e) => (down = { x: e.clientX, y: e.clientY }));
+    this.element.addEventListener("pointerup", (e) => {
+      if (!down || !this.picker || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6) return;
+      const rect = this.element.getBoundingClientRect();
+      const ndc = new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(ndc, this.camera);
+      const uv = raycaster.intersectObject(this.sphere)[0]?.uv;
+      if (!uv) return;
+      const lat = Math.round((uv.y - 0.5) * 180 * 1000) / 1000;
+      const lng = Math.round((uv.x * 360 - 180) * 1000) / 1000;
+      this.picker({ lat, lng, country: countryAt(lat, lng) });
+    });
+  }
+
+  /** Lets the editor pick a place by tapping the globe; null turns it off. */
+  setPicker(picker: ((place: { lat: number; lng: number; country?: string }) => void) | null) {
+    this.picker = picker;
+    this.element.classList.toggle("picking", picker !== null);
   }
 
   /** Turns the globe to the place and starts animating; hides the pin without coordinates. */

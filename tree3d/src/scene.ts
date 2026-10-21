@@ -68,20 +68,23 @@ export class FamilyTreeScene {
   private scene = new THREE.Scene();
   private camera: THREE.PerspectiveCamera;
   private controls: OrbitControls;
+  private content = new THREE.Group();
   private cards = new Map<string, THREE.Sprite>();
   private parts: TreePart[] = [];
   private raycaster = new THREE.Raycaster();
-  private homePos: THREE.Vector3;
-  private homeTarget: THREE.Vector3;
+  private homePos = new THREE.Vector3();
+  private homeTarget = new THREE.Vector3();
   private tween: Tween | null = null;
   private selected: string | null = null;
   private down: { x: number; y: number; t: number } | null = null;
   private lastTap: { id: string | null; t: number } = { id: null, t: 0 };
+  private index!: TreeIndex;
+  private layout!: TreeLayout;
 
   constructor(
     private container: HTMLElement,
-    private index: TreeIndex,
-    private layout: TreeLayout,
+    index: TreeIndex,
+    layout: TreeLayout,
     private callbacks: SceneCallbacks,
   ) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -91,34 +94,12 @@ export class FamilyTreeScene {
     container.appendChild(this.renderer.domElement);
     this.scene.background = new THREE.Color(SKY);
 
-    const tree = buildTree(index, layout);
-    this.parts = tree.parts;
-    this.scene.add(tree.group);
-
-    // Frame the whole tree, from the roots to the top generation, on any screen shape.
-    const topY = layout.levelY(Math.max(layout.generations - 1, 0)) + 1.5;
-    const bottomY = tree.groundY;
-    const topRadius = layout.radiusAt(Math.max(layout.generations - 1, 0));
-    const aspect = container.clientWidth / container.clientHeight;
-    const fov = 50;
-    const halfTan = Math.tan(THREE.MathUtils.degToRad(fov / 2));
-    const fitHeight = ((topY - bottomY) * 1.15) / 2 / halfTan;
-    const fitWidth = (topRadius * 2 * 1.1) / 2 / (halfTan * aspect);
-    const distance = topRadius + Math.max(fitHeight, fitWidth);
-    this.homeTarget = new THREE.Vector3(0, (topY + bottomY) / 2, 0);
-    this.homePos = new THREE.Vector3(0, this.homeTarget.y + (topY - bottomY) * 0.12, distance);
-    this.camera = new THREE.PerspectiveCamera(fov, aspect, 0.1, 1000);
-    this.camera.position.copy(this.homePos);
-    // Fade the far side of the crown so the front reads clearly.
-    this.scene.fog = new THREE.Fog(SKY, distance, distance + topRadius * 2.5);
-
+    this.camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-    this.controls.target.copy(this.homeTarget);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.08;
     this.controls.rotateSpeed = 0.6;
     this.controls.minDistance = 4;
-    this.controls.maxDistance = distance * 1.8;
     this.controls.minPolarAngle = Math.PI * 0.2;
     this.controls.maxPolarAngle = Math.PI * 0.62;
     this.controls.autoRotateSpeed = 0.6;
@@ -132,8 +113,53 @@ export class FamilyTreeScene {
     const moon = new THREE.DirectionalLight("#ffffff", 1.4);
     moon.position.set(15, 30, 25);
     this.scene.add(moon);
-    this.scene.add(starField(distance * 3));
-    this.scene.add(groundDisc(topRadius * 1.4, bottomY - 0.35));
+    this.scene.add(starField(300));
+    this.scene.add(this.content);
+
+    this.setTree(index, layout, true);
+    this.bindPointer();
+    window.addEventListener("resize", () => this.resize());
+    this.renderer.setAnimationLoop((time) => this.frame(time));
+  }
+
+  /**
+   * Replaces the people and branches, e.g. after an edit. The camera stays
+   * where it is unless `frame` is set.
+   */
+  setTree(index: TreeIndex, layout: TreeLayout, frame = false) {
+    this.index = index;
+    this.layout = layout;
+    this.content.traverse((object) => {
+      const mesh = object as THREE.Mesh;
+      mesh.geometry?.dispose();
+      const materials = Array.isArray(mesh.material) ? mesh.material : mesh.material ? [mesh.material] : [];
+      for (const material of materials) {
+        (material as THREE.MeshBasicMaterial).map?.dispose();
+        material.dispose();
+      }
+    });
+    this.content.clear();
+    this.cards.clear();
+
+    const tree = buildTree(index, layout);
+    this.parts = tree.parts;
+    this.content.add(tree.group);
+
+    // Frame the whole tree, from the roots to the top generation, on any screen shape.
+    const top = Math.max(layout.generations - 1, 0);
+    const topY = layout.levelY(top) + 1.5;
+    const bottomY = tree.groundY;
+    const topRadius = layout.radiusAt(top);
+    const halfTan = Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2));
+    const fitHeight = ((topY - bottomY) * 1.15) / 2 / halfTan;
+    const fitWidth = (topRadius * 2 * 1.1) / 2 / (halfTan * this.camera.aspect);
+    const distance = topRadius + Math.max(fitHeight, fitWidth);
+    this.homeTarget.set(0, (topY + bottomY) / 2, 0);
+    this.homePos.set(0, this.homeTarget.y + (topY - bottomY) * 0.12, distance);
+    this.controls.maxDistance = distance * 1.8;
+    // Fade the far side of the crown so the front reads clearly.
+    this.scene.fog = new THREE.Fog(SKY, distance, distance + topRadius * 2.5);
+    this.content.add(groundDisc(topRadius * 1.4, bottomY - 0.35));
 
     for (const [id, node] of layout.nodes) {
       const card = createPersonCard(index.people.get(id)!);
@@ -141,12 +167,14 @@ export class FamilyTreeScene {
       card.userData.personId = id;
       card.renderOrder = 1;
       this.cards.set(id, card);
-      this.scene.add(card);
+      this.content.add(card);
     }
 
-    this.bindPointer();
-    window.addEventListener("resize", () => this.resize());
-    this.renderer.setAnimationLoop((time) => this.frame(time));
+    if (frame) {
+      this.camera.position.copy(this.homePos);
+      this.controls.target.copy(this.homeTarget);
+    }
+    this.select(this.selected && index.people.has(this.selected) ? this.selected : null);
   }
 
   private bindPointer() {

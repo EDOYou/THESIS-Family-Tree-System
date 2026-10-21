@@ -197,7 +197,7 @@ The viewer consumes a single **tree snapshot** JSON (`{ version, generatedAt, pe
 | Phase | Goal | Deliverables |
 |---|---|---|
 | **0. Prototype** (this PR) | Prove the 3D/touch experience | `tree3d/` app: tree growing from root grandparents, multiple marriages, rotate/pinch/pan, tap for biography with achievements and a globe pin, double-tap fly-to, idle attract mode, auto-refresh of shared data, English + draft Azerbaijani, sample family, legacy-data adapter, unit tests |
-| **1. Real data, one screen** | See our family on a real touchscreen | Simple editor for Bear (add a person, link parents and partners, pick their city on a map, write a biography), our real family data, photos on cards, search box, one pilot screen at home, tune gestures with real users (grandparents!) |
+| **1. Real data, one screen** | See our family on a real touchscreen | ✅ Editing directly on the tree (add/edit/delete people, marriages, photos, globe location, undo), saved to a local family file. Still to do: enter the real family, search box, one pilot screen at home, tune gestures with real users (grandparents!) |
 | **2. Server & sync** | Many homes, offline | Snapshot endpoint, device tokens, PWA offline cache, migration script, kiosk provisioning script |
 | **3. Biographies & media** | Rich stories | Markdown biographies, photo galleries, stories timeline, editor mode on phone |
 | **4. Delight** | Make it feel alive | Focus mode, "on this day" birthdays/memorials on the idle screen, a "where is everyone" world view with all relatives on the globe, seasons for the tree, voice-over or recorded stories |

@@ -244,3 +244,183 @@ button {
   left: 4px;
   color: var(--accent);
 }
+
+/* ---- Edit mode ---------------------------------------------------------- */
+
+.edit-toggle {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  padding: 12px 20px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: var(--panel);
+  font-size: 18px;
+}
+
+.edit-bar {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: var(--panel);
+  border: 1px solid rgba(255, 207, 112, 0.5);
+  font-size: 17px;
+}
+
+body.editing .edit-bar {
+  display: flex;
+}
+
+body.editing .edit-toggle,
+body.editing .hint {
+  display: none;
+}
+
+.edit-status {
+  color: var(--muted);
+  min-width: 80px;
+}
+
+.btn {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 16px;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.btn.primary {
+  border-color: var(--accent);
+  background: rgba(255, 207, 112, 0.18);
+}
+
+.btn.subtle {
+  border-color: transparent;
+  color: var(--muted);
+}
+
+.btn.danger {
+  margin-top: 24px;
+  width: 100%;
+  border-color: rgba(255, 120, 120, 0.5);
+  color: #ff9a9a;
+}
+
+.bio.edit {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.edit-title {
+  margin-bottom: 16px;
+}
+
+.edit-photo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.edit-photo .bio-portrait {
+  width: 80px;
+  height: 80px;
+  font-size: 34px;
+  cursor: pointer;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.field-row {
+  display: flex;
+  gap: 12px;
+}
+
+.field-label {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.field-hint {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0 0 4px;
+}
+
+.field input,
+.field textarea,
+.field select,
+.partner-row select,
+.partner-row input,
+.add-row select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text);
+  font: inherit;
+  font-size: 17px;
+}
+
+.field textarea {
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.edit-section h3 {
+  margin: 18px 0 8px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.partner-row,
+.add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.partner-row .chip {
+  flex: none;
+  min-height: 40px;
+  padding: 6px 12px;
+  font-size: 16px;
+}
+
+.partner-row select {
+  width: auto;
+}
+
+.partner-row input.year {
+  width: 72px;
+  padding: 8px;
+}
+
+.add-row select {
+  flex: 1;
+}
+
+.globe.picking {
+  cursor: crosshair;
+}

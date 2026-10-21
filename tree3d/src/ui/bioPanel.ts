@@ -34,6 +34,10 @@ export class BioPanel {
     this.root.append(close, this.body);
   }
 
+  setIndex(index: TreeIndex) {
+    this.index = index;
+  }
+
   show(person: Person) {
     this.body.replaceChildren();
 
